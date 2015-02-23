@@ -3,6 +3,8 @@
 #include <cstring>
 #include <vector>
 #include <cmath>
+#include <map>
+#include <string>
 using namespace std;
 #define W '%'
 #define E '_'
@@ -16,7 +18,7 @@ struct coord {
     int y;
     int cost ;
     public:
-    coord(int a , int b, int c=0):x(a),y(b),cost(c) {}
+    coord(int a , int b, int c=0):x(a),y(b),cost(c){}
     bool operator==(const coord& c) {
         return (x==c.x)&&(y==c.y);
     }
@@ -51,7 +53,7 @@ struct manhattan_a_star_comp{
 
 };
 enum direction {UP,DOWN,LEFT,RIGHT};
-vector<coord> get_neighbors(coord c){
+vector<coord> get_neighbors(coord c,int M, int N){
     vector<coord> neighbors;
     if(c.x+1 < N ) neighbors.push_back(coord(c.x+1,c.y));
     if(c.y+1 < M ) neighbors.push_back(coord(c.x,c.y+1));
@@ -104,7 +106,7 @@ void bfs(char **maze, coord start, coord dest, int& numnodes, int& path_cost){
             break;
         }
         numnodes++;
-        vector<coord> neighbors = get_neighbors(pos);
+        vector<coord> neighbors = get_neighbors(pos,M,N);
         //cout<<"printing the neighbors of size "<<neighbors.size()<<"\n";
         for (int i=0; i< neighbors.size(); ++i){
             if(MAZE_VAL(maze,neighbors[i])==E) {
@@ -143,7 +145,7 @@ bool dfs(char ** maze, coord start, coord dest , int& numnodes, int& path_cost){
     }
 
     MAZE_VAL(maze,start)=V;
-    vector<coord> neighbors = get_neighbors(start);
+    vector<coord> neighbors = get_neighbors(start,M,N);
     for (int i=0; i< neighbors.size(); ++i){
         if(MAZE_VAL(maze,neighbors[i])==E){
             if(dfs(maze,neighbors[i],dest,numnodes,path_cost)){
@@ -181,7 +183,7 @@ bool greedy_best_fit(char** maze,coord start, coord dest, int& numnodes, int& pa
             break;
         }
         numnodes++;
-        vector<coord> neighbors = get_neighbors(pos);
+        vector<coord> neighbors = get_neighbors(pos,M,N);
         for(int i=0;i<neighbors.size();++i){
             if(MAZE_VAL(maze,neighbors[i])==E) {
                 cout<<"\t";neighbors[i].print();
@@ -231,7 +233,7 @@ bool a_star(char** maze,coord start, coord dest, int& numnodes, int& path_cost){
             break;
         }
         numnodes++;
-        vector<coord> neighbors = get_neighbors(pos);
+        vector<coord> neighbors = get_neighbors(pos,M,N);
         for(int i=0;i<neighbors.size();++i){
             if(MAZE_VAL(maze,neighbors[i])==E) {
                 //as pos is the parent of neighbor i                    
@@ -259,10 +261,157 @@ bool a_star(char** maze,coord start, coord dest, int& numnodes, int& path_cost){
     delete[] parent;    
 
 }
+/*
+void execute_puzzle_move(int ** puzzle, char** parent, cood pos){
+
+    coord pcoord(-1,-1);
+    switch(MAZE_VAL(parent,pos)){
+        case UP : { pcoord.y = pos.y-1; pccordd.x = pos.x;break; }
+        case DOWN : { pcoord.y = pos.y+1; pccordd.x = pos.x;break; }
+        case LEFT : { pcoord.y = pos.y; pccordd.x = pos.x-1;break; }
+        case RIGHT : { pcoord.y = pos.y; pccordd.x = pos.x+1;break; }
+        default : return;
+    }
+    MAZE_VAL(puzzle,pcoord) = MAZE_VAL(puzzle,pos);
+    MAZE_VAL(puzzle,pos) = 9;
+}
+
+bool check_solution(int ** puzzle){
+    int number = 1;
+    for(int i=0;i<8;++i)
+        for(int j=0;j<8;++j)
+            if(puzzle[i][j]!=number++)
+                return false;
+    return true;
+}
+*/
+
+struct state8{
+    string state;   
+    int cost;
+    string parent;
+};
+state8 execute_move(state8 s,direction dir){
+    
+    int pos,i,j,newpos;
+    string parent = s.state;
+    //find the curent
+    for(pos=0;pos<9 && s.state[pos]!='9';++pos);
+    i = pos/3;
+    j = pos%3;
+    switch(dir){
+        case UP: i--;break; case DOWN:i++;break; case LEFT:j--;break; case RIGHT:j++;break;
+    }
+    newpos = 3*i+j;
+    swap(s.state[newpos],s.state[pos]);
+    s.cost++;
+    s.parent = parent;
+    return s;
+}
+vector<state8> get_8neighbors(state8 s){
+    vector<state8> neighbors;
+    int i,j,pos;
+    for(pos=0;pos<9 && s.state[pos]!='9';++pos);
+    i = pos/3;
+    j = pos%3;
+    if(i+1<3) neighbors.push_back(execute_move(s,DOWN));
+    if(j+1<3) neighbors.push_back(execute_move(s,RIGHT));
+    if(i-1>=0) neighbors.push_back(execute_move(s,UP));
+    if(j-1>=0) neighbors.push_back(execute_move(s,LEFT));
+    return neighbors;
+}
+bool check_solution(state8 s){
+    for(int i=1;i<10;++i)
+        if(s.state[i-1]-'0'!=i)
+            return false;
+    return true;
+
+}
+void print_puzzle(string s){
+    for(int i=0;i<3;++i){
+        for(int j=0;j<3;++j)
+            cout<<s[3*i+j]<<" ";
+        cout<<"\n";
+    }
+}
+
+/* heuristic for # misplaced tiles */
+struct misplaced_tiles{
+    public:
+    int misplaced_tiles_count(state8& s){
+        int count=0;
+        for(int i=1;i<10;++i)
+            if(s.state[i-1]-'0'!=i)count++;
+        return count;
+    }
+    bool operator()(state8 &a, state8& b){
+        return (misplaced_tiles_count(a)+a.cost)< (misplaced_tiles_count(b)+b.cost)?false:true;
+    }
+};
+struct manhattan_dist_tiles{
+    public:
+    int manhattan_dist_sum(state8& s){
+        int sum =0;
+        for(int i=0;i<9;++i){
+            coord c1(i/3,i%3),c2((s.state[i]-'0')/3,(s.state[i]-'1')%3);
+            int mdist = man_dist(c1,c2);
+            sum += mdist;
+        }
+        return sum;
+    } 
+    bool operator()(state8 &a, state8& b){
+        return (manhattan_dist_sum(a)+a.cost)< (manhattan_dist_sum(b)+b.cost)?false:true;
+    }
+
+};
+template<class T>
+bool astar_8_puzle(state8 start, int& numnodes, int& path_cost, T heuristic){
+    
+
+    /* the starting position has no parent and no move needs to be 
+    executed */ 
+    bool found = false;
+    map<string,string> visited;
+    priority_queue<state8,vector<state8>,T> pq(heuristic);
+    pq.push(start);
+    state8 pos;
+    while(!pq.empty()){
+        pos = pq.top();
+        pq.pop();
+        cout<<"At position\n";print_puzzle(pos.state);
+        cout<<"With Parent "<<pos.parent<<"\n";
+        visited[pos.state]=pos.parent;
+        if(check_solution(pos)){
+            found = true;
+            cout<<"Found the destination\n";
+            print_puzzle(pos.state);
+            break;
+        }
+        numnodes++;
+        vector<state8> neighbors = get_8neighbors(pos);
+        for(int i=0;i<neighbors.size();++i){
+            if(visited.find(neighbors[i].state)==visited.end()) {
+                cout<<"\t"<<neighbors[i].state<<"\n";
+                //cout<<"\tqmetric:"<<man_dist(dest,neighbors[i])<<"\n";
+                pq.push(neighbors[i]);
+            }
+        }
+    }
+    if(found){
+        cout<<"The sequence of operations is \n";
+        string trav = pos.state;
+        while(trav!=start.state){
+            cout<<"\n";
+            print_puzzle(trav);
+            trav=visited[trav];
+        }
+    }
+    
+}
 
 int main(){
-
     int numnodes, path_cost;
+    /*
     cin>>M>>N;
     cout<<"The values are "<<M<<" "<<N<<"\n";
     coord start(0,0), dest(0,0);
@@ -282,8 +431,10 @@ int main(){
             cout<<maze[i][j];
         }
         cout<<"\n";
-    }
+    }*/
+    state8 start = {std::string("124896753"),0,string("124896753")};
     cout << "Running the DFS search on this\n";
-    greedy_best_fit(maze,start,dest,numnodes,path_cost);
-    print_maze(maze);
+    //misplaced_tiles mt;
+    manhattan_dist_tiles mt;
+    astar_8_puzle(start,numnodes,path_cost,mt);
 }
