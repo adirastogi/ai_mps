@@ -364,6 +364,31 @@ struct manhattan_dist_tiles{
     }
 
 };
+struct gasching_hr{
+    public:
+    int gasching_hr_val(state8 &a){
+        string base_str = "123456789";
+        int count = 0;
+        string state = a.state;
+        int x=0;
+        while(state!=base_str){
+            //cout<<"State:"<<state<<"\n";
+            for(int i=1;i<10;++i){
+                //if not at its proper state
+                if(state[i-1]-'0'!=i){
+                    swap(state[i-1],state[state[i-1]-'0'-1]);
+                    count++;
+                    break;
+                }
+            }
+        }
+        //cout<<"\nThe gasching heuristic count for "<<a.state<<" is "<<count;
+        return count;
+    }
+    bool operator()(state8 &a, state8& b){
+        return (gasching_hr_val(a)+a.cost)<(gasching_hr_val(b)+b.cost)?false:true;
+    }
+};
 template<class T>
 bool astar_8_puzle(state8 start, int& numnodes, int& path_cost, T heuristic){
     
@@ -432,9 +457,9 @@ int main(){
         }
         cout<<"\n";
     }*/
-    state8 start = {std::string("124896753"),0,string("124896753")};
+    state8 start = {std::string("296134758"),0,string("124896753")};
     cout << "Running the DFS search on this\n";
     //misplaced_tiles mt;
-    manhattan_dist_tiles mt;
+    gasching_hr mt;
     astar_8_puzle(start,numnodes,path_cost,mt);
 }
