@@ -3,6 +3,7 @@
 #include <cstring>
 #include <vector>
 #include <cmath>
+#include <cstdlib>
 #include <map>
 #include <set>
 #include <string>
@@ -227,11 +228,11 @@ bool a_star(char** maze,coord start, coord dest, int& numnodes, int& path_cost){
     while(!pq.empty()){
         coord pos = pq.top();
         pq.pop();
-        cout<<"At position\n";pos.print();
+        //cout<<"At position\n";pos.print();
         MAZE_VAL(maze,pos) = V;
         if(pos==dest){
             found = true;
-            cout<<"Found the destination\n";
+            //cout<<"Found the destination\n";
             break;
         }
         numnodes++;
@@ -240,8 +241,8 @@ bool a_star(char** maze,coord start, coord dest, int& numnodes, int& path_cost){
             if(MAZE_VAL(maze,neighbors[i])==E) {
                 //as pos is the parent of neighbor i                    
                 neighbors[i].cost = pos.cost +1;
-                cout<<"\t";neighbors[i].print();
-                cout<<"\tqmetric:"<<man_dist(dest,neighbors[i])<<"\n";
+                //cout<<"\t";neighbors[i].print();
+                //cout<<"\tqmetric:"<<man_dist(dest,neighbors[i])<<"\n";
                 pq.push(neighbors[i]);
                 MAZE_VAL(parent,neighbors[i]) = get_direction(pos,neighbors[i]);
             }
@@ -376,7 +377,7 @@ struct manhattan_dist_tiles{
 };
 struct gasching_hr{
     public:
-    int gasching_hr_val(state8 &a){
+    int gasching_hr_val(const state8 &a){
         string base_str = "123456789";
         int count = 0;
         string state = a.state;
@@ -406,6 +407,8 @@ bool astar_8_puzle(state8 start, int& numnodes, int& path_cost, T heuristic){
     /* the starting position has no parent and no move needs to be 
     executed */ 
     bool found = false;
+    path_cost = 0;
+    numnodes=0;
     map<string,string> visited;
     typedef typename set<state8,T>::iterator setiterator;
     map<string,setiterator> open; 
@@ -470,8 +473,56 @@ bool astar_8_puzle(state8 start, int& numnodes, int& path_cost, T heuristic){
             cout<<"\n";
             print_puzzle(trav);
             trav=visited[trav];
+            path_cost++;
         }
     }
+    
+}
+
+void solve_maze_single();
+void solve_maze_multiple();
+void solve_8puzzle(){
+
+    cout<<"Solving the 8 puzzle for 50 random runs\n";
+    int avg_misplaced_path =0;
+    int avg_misplaced_nodes =0;
+    int avg_manhattan_path =0;
+    int avg_manhattan_nodes =0;
+    int avg_gasching_path =0;
+    int avg_gasching_nodes =0;
+    
+    for(int i=0;i<1;++i){
+        int numshuffle = rand()%10;
+        int path_cost,numnodes;
+        string source = "123456789";
+        for(int j=0;j<numshuffle;++j)
+            swap(source[rand()%9],source[rand()%9]);
+        cout<<"Solving for string "<<source<<"\n";
+        state8 start = {source,0,""};
+        misplaced_tiles mt;
+        manhattan_dist_tiles mh;
+        gasching_hr gh;
+        path_cost=0;numnodes=0;
+        astar_8_puzle(start,numnodes,path_cost,mt);
+        cout<<"With misplaced heuristic pathcost:"<<path_cost<<" numnodes "<<numnodes<<"\n";
+        /*
+        avg_misplaced_path += path_cost;
+        avg_misplaced_nodes += numnodes;
+        path_cost=0;numnodes=0;
+        astar_8_puzle(start,numnodes,path_cost,mh);
+        cout<<"With manhattan heuristic pathcost:"<<path_cost<<" numnodes "<<numnodes<<"\n";
+        avg_manhattan_path += path_cost;
+        avg_manhattan_nodes += numnodes;
+        path_cost=0;numnodes=0;
+        astar_8_puzle(start,numnodes,path_cost,gh);
+        cout<<"With gasching heuristic pathcost:"<<path_cost<<" numnodes "<<numnodes<<"\n";
+        avg_gasching_path += path_cost;
+        avg_gasching_nodes += numnodes;
+        */
+    }
+    cout<<"Average Misplaced pathcost and numnodes:"<<float(avg_misplaced_path)/50<<" "<<float(avg_misplaced_nodes)/50<<"\n";
+    cout<<"Average Misplaced pathcost and numnodes:"<<float(avg_manhattan_path)/50<<" "<<float(avg_manhattan_nodes)/50<<"\n";
+    cout<<"Average Misplaced pathcost and numnodes:"<<float(avg_gasching_path)/50<<" "<<float(avg_gasching_nodes)/50<<"\n";
     
 }
 
@@ -498,9 +549,9 @@ int main(){
         }
         cout<<"\n";
     }*/
-    state8 start = {std::string("124896753"),0,string("124896753")};
+    state8 start = {std::string("296134758"),0,string("124896753")};
     cout << "Running the DFS search on this\n";
     //misplaced_tiles mt;
-    manhattan_dist_tiles mt;
+    gasching_hr mt;
     astar_8_puzle(start,numnodes,path_cost,mt);
 }
