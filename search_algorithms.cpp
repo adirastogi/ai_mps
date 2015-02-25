@@ -36,7 +36,6 @@ struct coord {
 int man_dist(coord c1, coord c2){
     return abs(c1.x-c2.x) + abs(c1.y-c2.y);
 }
-
 struct manhattan_comp{
     public:
     coord dest;
@@ -71,8 +70,12 @@ direction get_direction(coord p, coord c){
 void print_maze(char** maze){
 
     for(int i=0;i<M;++i){
-        for(int j=0;j<N;++j)
-            cout<<maze[i][j];
+        for(int j=0;j<N;++j){
+            if(maze[i][j]=='$'||maze[i][j]=='_') {
+                cout<<' ';
+            }
+            else cout<<maze[i][j];
+        }
         cout<<"\n";
     }
 
@@ -96,16 +99,15 @@ void bfs(char **maze, coord start, coord dest, int& numnodes, int& path_cost){
         coord pos = frontier.front();
         frontier.pop();
         if(pos==sentinel) {
-            cout<<"Found sentinel\n";
-            path_cost++;
+            //cout<<"Found sentinel\n";
             if(!frontier.empty()) frontier.push(sentinel) ;
             continue;
         }
-        cout<<"At position\n";pos.print();
+        //cout<<"At position\n";pos.print();
         MAZE_VAL(maze,pos) = V;
         if(pos==dest){
             found = true;
-            cout<<"Found the destination\n";
+            //cout<<"Found the destination\n";
             break;
         }
         numnodes++;
@@ -113,23 +115,23 @@ void bfs(char **maze, coord start, coord dest, int& numnodes, int& path_cost){
         //cout<<"printing the neighbors of size "<<neighbors.size()<<"\n";
         for (int i=0; i< neighbors.size(); ++i){
             if(MAZE_VAL(maze,neighbors[i])==E) {
-                cout<<"\t";neighbors[i].print();
+                //cout<<"\t";neighbors[i].print();
                 frontier.push(neighbors[i]);
                 MAZE_VAL(parent,neighbors[i]) = get_direction(pos,neighbors[i]);
             }
         }
     }
-
+    path_cost = 0;
     if(found){
         coord trav = dest;
         while(trav!=start){
             MAZE_VAL(maze,trav) = D;
             direction dir  = static_cast<direction>(MAZE_VAL(parent,trav));
             switch(dir){case UP: trav.y--;break; case DOWN:trav.y++;break; case LEFT: trav.x--;break; case RIGHT:trav.x++;break;}
+            path_cost++;
         }
         MAZE_VAL(maze,trav) = (char)D;
     }
-
 
     for(int i=0;i<M;++i)
         delete[] parent[i];
@@ -140,7 +142,7 @@ void bfs(char **maze, coord start, coord dest, int& numnodes, int& path_cost){
 bool dfs(char ** maze, coord start, coord dest , int& numnodes, int& path_cost){
 
 
-    cout<<"DFS search at node\n";start.print();
+    //cout<<"DFS search at node\n";start.print();
     numnodes++;
     if(start==dest){
         path_cost++;
@@ -155,7 +157,7 @@ bool dfs(char ** maze, coord start, coord dest , int& numnodes, int& path_cost){
                 MAZE_VAL(maze,neighbors[i])=D;
                 path_cost++;
                 return true;
-            }
+            }else numnodes++;
         }
     }
     
@@ -178,31 +180,32 @@ bool greedy_best_fit(char** maze,coord start, coord dest, int& numnodes, int& pa
     while(!pq.empty()){
         coord pos = pq.top();
         pq.pop();
-        cout<<"At position\n";pos.print();
+        //cout<<"At position\n";pos.print();
         MAZE_VAL(maze,pos) = V;
         if(pos==dest){
             found = true;
-            cout<<"Found the destination\n";
+            //cout<<"Found the destination\n";
             break;
         }
         numnodes++;
         vector<coord> neighbors = get_neighbors(pos,M,N);
         for(int i=0;i<neighbors.size();++i){
             if(MAZE_VAL(maze,neighbors[i])==E) {
-                cout<<"\t";neighbors[i].print();
-                cout<<"\tqmetric:"<<man_dist(dest,neighbors[i])<<"\n";
+                //cout<<"\t";neighbors[i].print();
+                //cout<<"\tqmetric:"<<man_dist(dest,neighbors[i])<<"\n";
                 pq.push(neighbors[i]);
                 MAZE_VAL(parent,neighbors[i]) = get_direction(pos,neighbors[i]);
             }
         }
     }
-
+    path_cost = 0;
     if(found){
         coord trav = dest;
         while(trav!=start){
             MAZE_VAL(maze,trav) = D;
             direction dir  = static_cast<direction>(MAZE_VAL(parent,trav));
             switch(dir){case UP: trav.y--;break; case DOWN:trav.y++;break; case LEFT: trav.x--;break; case RIGHT:trav.x++;break;}
+            path_cost++;
         }
         MAZE_VAL(maze,trav) = (char)D;
     }
@@ -255,6 +258,7 @@ bool a_star(char** maze,coord start, coord dest, int& numnodes, int& path_cost){
             MAZE_VAL(maze,trav) = D;
             direction dir  = static_cast<direction>(MAZE_VAL(parent,trav));
             switch(dir){case UP: trav.y--;break; case DOWN:trav.y++;break; case LEFT: trav.x--;break; case RIGHT:trav.x++;break;}
+            path_cost++;
         }
         MAZE_VAL(maze,trav) = (char)D;
     }
@@ -491,8 +495,78 @@ int count_inversion(string str){
     }
     return count;
 }
+void restore_maze(char** to , char** from){
+    for(int i=0;i<M;++i)
+        for(int j=0;j<N;++j){
+            to[i][j] = from[i][j];
+    } 
+}
 
-void solve_maze_single();
+void solve_maze_single(){
+    int path_cost, numnodes;
+    cin>>M>>N;
+    coord start(0,0), dest(0,0);
+    char ** maze = new char*[M];
+    char ** maze2 = new char*[M];
+    for (int i=0;i<N;++i) {
+        maze[i] = new char[N];
+        maze2[i] = new char[N];
+    }
+    for (int i=0; i<M;++i){
+        for(int j=0; j<N; ++j){
+            cin>>maze[i][j];
+            if(maze[i][j]=='P'){
+                start.x = j; start.y = i;
+            }
+            if(maze[i][j]==D){
+                dest.x = j; dest.y=i;
+                maze[i][j]=E;
+            }
+            //cout<<maze[i][j];
+        }
+        //cout<<"\n";
+    }
+
+    //print_maze(maze);
+    restore_maze(maze2,maze); 
+
+    cout<<"The solution using BFS is\n";
+    path_cost = 0;numnodes=0;
+    //print_maze(maze);
+    //dest.print();
+    bfs(maze,start, dest,numnodes,path_cost);
+    MAZE_VAL(maze,start) = 'P';
+    print_maze(maze);
+    cout<<"Path Cost:"<<path_cost<<" numnodes "<<numnodes<<"\n";
+
+    restore_maze(maze,maze2);
+    //print_maze(maze);
+    cout<<"The solution using DFS is\n";
+    path_cost = 0; numnodes=0;
+    dfs(maze,start, dest,numnodes,path_cost);
+    MAZE_VAL(maze,start) = 'P';
+    print_maze(maze);
+    cout<<"Path Cost:"<<path_cost<<" numnodes "<<numnodes<<"\n";
+
+    restore_maze(maze,maze2);
+    //print_maze(maze);
+    cout<<"The solution using greedy is\n";
+    path_cost = 0; numnodes=0;
+    greedy_best_fit(maze,start, dest,numnodes,path_cost);
+    MAZE_VAL(maze,start) = 'P';
+    print_maze(maze);
+    cout<<"Path Cost:"<<path_cost<<" numnodes "<<numnodes<<"\n";
+
+    restore_maze(maze,maze2);
+    //print_maze(maze);
+    cout<<"The solution using a star is\n";
+    path_cost = 0; numnodes=0;
+    a_star(maze,start, dest,numnodes,path_cost);
+    MAZE_VAL(maze,start) = 'P';
+    print_maze(maze);
+    cout<<"Path Cost:"<<path_cost<<" numnodes "<<numnodes<<"\n";
+
+}
 void solve_maze_multiple();
 void solve_8puzzle(){
 
@@ -542,32 +616,5 @@ void solve_8puzzle(){
 }
 
 int main(){
-    int numnodes, path_cost;
-    /*
-    cin>>M>>N;
-    cout<<"The values are "<<M<<" "<<N<<"\n";
-    coord start(0,0), dest(0,0);
-    char ** maze = new char*[M];
-    for (int i=0;i<N;++i) 
-        maze[i] = new char[N];
-    for (int i=0; i<M;++i){
-        for(int j=0; j<N; ++j){
-            cin>>maze[i][j];
-            if(maze[i][j]=='P'){
-                start.x = j; start.y = i;
-            }
-            if(maze[i][j]==D){
-                dest.x = j; dest.y=i;
-                maze[i][j]=E;
-            }
-            cout<<maze[i][j];
-        }
-        cout<<"\n";
-    }*/
-    //state8 start = {std::string("296134758"),0,string("124896753")};
-    //cout << "Running the DFS search on this\n";
-    //misplaced_tiles mt;
-    //gasching_hr mt;
-    //astar_8_puzle(start,numnodes,path_cost,mt);
-    solve_8puzzle(); 
+    solve_maze_single(); 
 }
