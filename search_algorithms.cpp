@@ -4,7 +4,9 @@
 #include <vector>
 #include <cmath>
 #include <map>
+#include <set>
 #include <string>
+#include <cassert>
 using namespace std;
 #define W '%'
 #define E '_'
@@ -304,7 +306,6 @@ state8 execute_move(state8 s,direction dir){
     }
     newpos = 3*i+j;
     swap(s.state[newpos],s.state[pos]);
-    s.cost++;
     s.parent = parent;
     return s;
 }
@@ -338,29 +339,37 @@ void print_puzzle(string s){
 /* heuristic for # misplaced tiles */
 struct misplaced_tiles{
     public:
-    int misplaced_tiles_count(state8& s){
+    int misplaced_tiles_count(const state8& s){
         int count=0;
         for(int i=1;i<10;++i)
             if(s.state[i-1]-'0'!=i)count++;
         return count;
     }
-    bool operator()(state8 &a, state8& b){
-        return (misplaced_tiles_count(a)+a.cost)< (misplaced_tiles_count(b)+b.cost)?false:true;
+    bool operator()(const state8 &a, const state8& b){
+        int ca =  (misplaced_tiles_count(a)+a.cost);
+        int cb =  (misplaced_tiles_count(b)+b.cost);
+        if (ca!=cb) return ca<cb;
+        else return a.state<b.state;
     }
 };
 struct manhattan_dist_tiles{
     public:
-    int manhattan_dist_sum(state8& s){
+    int manhattan_dist_sum(const state8& s){
         int sum =0;
         for(int i=0;i<9;++i){
-            coord c1(i/3,i%3),c2((s.state[i]-'0')/3,(s.state[i]-'1')%3);
+            coord c1(i/3,i%3),c2((s.state[i]-'1')/3,(s.state[i]-'1')%3);
             int mdist = man_dist(c1,c2);
             sum += mdist;
         }
+        //std::cout<<"Manhattan Distance for "<<s.state <<" "<<sum<<"\n";
         return sum;
     } 
-    bool operator()(state8 &a, state8& b){
-        return (manhattan_dist_sum(a)+a.cost)< (manhattan_dist_sum(b)+b.cost)?false:true;
+    //reqires a total order so they must also be lexicographically compared 
+    bool operator()(const state8 &a,const state8& b){
+        int ca =  (manhattan_dist_sum(a)+a.cost);
+        int cb =  (manhattan_dist_sum(b)+b.cost);
+        if(ca!=cb) return ca<cb;
+        else return a.state < b.state;
     }
 
 };
@@ -372,14 +381,21 @@ bool astar_8_puzle(state8 start, int& numnodes, int& path_cost, T heuristic){
     executed */ 
     bool found = false;
     map<string,string> visited;
-    priority_queue<state8,vector<state8>,T> pq(heuristic);
-    pq.push(start);
+    typedef typename set<state8,T>::iterator setiterator;
+    map<string,setiterator> open; 
+    set<state8,T> pq;
+    std::pair<setiterator,bool> f = pq.insert(start);
+    assert(f.second==true); 
+    open[start.state]=f.first;
     state8 pos;
     while(!pq.empty()){
-        pos = pq.top();
-        pq.pop();
-        cout<<"At position\n";print_puzzle(pos.state);
-        cout<<"With Parent "<<pos.parent<<"\n";
+        typename set<state8,T>::iterator iter = pq.begin();
+        pos = *(iter);
+        pq.erase(iter);
+        open.erase(open.find(pos.state));
+        cout<<"At position "<<pos.state<<"\n";
+        cout<<"With cost "<<pos.cost<<" \n";
+        //cout<<"With Parent "<<pos.parent<<"\n";
         visited[pos.state]=pos.parent;
         if(check_solution(pos)){
             found = true;
@@ -390,11 +406,35 @@ bool astar_8_puzle(state8 start, int& numnodes, int& path_cost, T heuristic){
         numnodes++;
         vector<state8> neighbors = get_8neighbors(pos);
         for(int i=0;i<neighbors.size();++i){
-            if(visited.find(neighbors[i].state)==visited.end()) {
-                cout<<"\t"<<neighbors[i].state<<"\n";
-                //cout<<"\tqmetric:"<<man_dist(dest,neighbors[i])<<"\n";
-                pq.push(neighbors[i]);
-            }
+            typename map<string,setiterator>::iterator openit; 
+            setiterator setit ;
+            neighbors[i].cost = pos.cost+1;
+            cout<<"\tneighbor "<<neighbors[i].state<<" with hr "<<heuristic.manhattan_dist_sum(neighbors[i])<<"\n";
+            //neighbour in closed set
+            if(visited.find(neighbors[i].state)!=visited.end()){ 
+                cout<<"\tvisited state "<<neighbors[i].state<<"\n";
+                continue;
+            //in openset, update the cost estimate by removing from set and adding again
+            }else if((openit=open.find(neighbors[i].state))!=open.end()){
+                setit = openit->second;
+                if(setit->cost>neighbors[i].cost){
+                    cout<<"\tupdated state "<<neighbors[i].state<<","<<"parent:"<<neighbors[i].parent<<","<<neighbors[i].cost<<" against "<<setit->state 
+                    <<","<<setit->parent<<","<<setit->cost<<" \n";
+                    pq.erase(setit);
+                    open.erase(openit);
+                    std::pair < typename set<state8,T>::iterator, bool > retval;
+                    retval = pq.insert(neighbors[i]);
+                    assert(retval.second==true);
+                    setit = retval.first;
+                    open[neighbors[i].state]=setit;
+                }
+            }else {
+                std::pair < typename set<state8,T>::iterator, bool > retval;
+                retval = pq.insert(neighbors[i]);
+                assert(retval.second==true);
+                setit = retval.first;
+                open[neighbors[i].state]=setit;
+            } 
         }
     }
     if(found){
@@ -432,9 +472,9 @@ int main(){
         }
         cout<<"\n";
     }*/
-    state8 start = {std::string("124896753"),0,string("124896753")};
+    state8 start = {std::string("123879465"),0,string("124896753")};
     cout << "Running the DFS search on this\n";
-    //misplaced_tiles mt;
-    manhattan_dist_tiles mt;
+    misplaced_tiles mt;
+    //manhattan_dist_tiles mt;
     astar_8_puzle(start,numnodes,path_cost,mt);
 }
