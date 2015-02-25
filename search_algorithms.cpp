@@ -396,8 +396,11 @@ struct gasching_hr{
         //cout<<"\nThe gasching heuristic count for "<<a.state<<" is "<<count;
         return count;
     }
-    bool operator()(state8 &a, state8& b){
-        return (gasching_hr_val(a)+a.cost)<(gasching_hr_val(b)+b.cost)?false:true;
+    bool operator()(const state8 &a,const state8& b){
+        int ca = gasching_hr_val(a)+a.cost;
+        int cb = gasching_hr_val(b)+b.cost;
+        if (ca!=cb) return ca<cb;
+        else return a.state< b.state;
     }
 };
 template<class T>
@@ -422,14 +425,14 @@ bool astar_8_puzle(state8 start, int& numnodes, int& path_cost, T heuristic){
         pos = *(iter);
         pq.erase(iter);
         open.erase(open.find(pos.state));
-        cout<<"At position "<<pos.state<<"\n";
-        cout<<"With cost "<<pos.cost<<" \n";
+        //cout<<"At position "<<pos.state<<"\n";
+        //cout<<"With cost "<<pos.cost<<" \n";
         //cout<<"With Parent "<<pos.parent<<"\n";
         visited[pos.state]=pos.parent;
         if(check_solution(pos)){
             found = true;
-            cout<<"Found the destination\n";
-            print_puzzle(pos.state);
+            //cout<<"Found the destination\n";
+            //print_puzzle(pos.state);
             break;
         }
         numnodes++;
@@ -438,17 +441,17 @@ bool astar_8_puzle(state8 start, int& numnodes, int& path_cost, T heuristic){
             typename map<string,setiterator>::iterator openit; 
             setiterator setit ;
             neighbors[i].cost = pos.cost+1;
-            cout<<"\tneighbor "<<neighbors[i].state<<" with hr "<<heuristic.manhattan_dist_sum(neighbors[i])<<"\n";
+            //cout<<"\tneighbor "<<neighbors[i].state<<" with hr "<<heuristic.manhattan_dist_sum(neighbors[i])<<"\n";
             //neighbour in closed set
             if(visited.find(neighbors[i].state)!=visited.end()){ 
-                cout<<"\tvisited state "<<neighbors[i].state<<"\n";
+                //cout<<"\tvisited state "<<neighbors[i].state<<"\n";
                 continue;
             //in openset, update the cost estimate by removing from set and adding again
             }else if((openit=open.find(neighbors[i].state))!=open.end()){
                 setit = openit->second;
                 if(setit->cost>neighbors[i].cost){
-                    cout<<"\tupdated state "<<neighbors[i].state<<","<<"parent:"<<neighbors[i].parent<<","<<neighbors[i].cost<<" against "<<setit->state 
-                    <<","<<setit->parent<<","<<setit->cost<<" \n";
+                    //cout<<"\tupdated state "<<neighbors[i].state<<","<<"parent:"<<neighbors[i].parent<<","<<neighbors[i].cost<<" against "<<setit->state 
+                    //<<","<<setit->parent<<","<<setit->cost<<" \n";
                     pq.erase(setit);
                     open.erase(openit);
                     std::pair < typename set<state8,T>::iterator, bool > retval;
@@ -467,16 +470,26 @@ bool astar_8_puzle(state8 start, int& numnodes, int& path_cost, T heuristic){
         }
     }
     if(found){
-        cout<<"The sequence of operations is \n";
+        //cout<<"The sequence of operations is \n";
         string trav = pos.state;
         while(trav!=start.state){
-            cout<<"\n";
-            print_puzzle(trav);
+            //cout<<"\n";
+            //print_puzzle(trav);
             trav=visited[trav];
             path_cost++;
         }
     }
     
+}
+
+int count_inversion(string str){
+    int count = 0;
+    for(int i=0;i<8;++i){
+        for(int j=i+1;j<9;++j)
+            if(str[i]!='9' && str[i]>str[j]) 
+                count++;
+    }
+    return count;
 }
 
 void solve_maze_single();
@@ -491,13 +504,17 @@ void solve_8puzzle(){
     int avg_gasching_path =0;
     int avg_gasching_nodes =0;
     
-    for(int i=0;i<1;++i){
-        int numshuffle = rand()%10;
+    for(int i=0;i<50;++i){
         int path_cost,numnodes;
         string source = "123456789";
+        int x;
+        do{
+        int numshuffle = 2*(rand()%5+1);
         for(int j=0;j<numshuffle;++j)
             swap(source[rand()%9],source[rand()%9]);
-        cout<<"Solving for string "<<source<<"\n";
+            x=count_inversion(source);
+        }while(x%2==1||source=="123456789");
+        cout<<"Solving for string "<<source<<" with inversions "<<x<<"\n";
         state8 start = {source,0,""};
         misplaced_tiles mt;
         manhattan_dist_tiles mh;
@@ -505,7 +522,6 @@ void solve_8puzzle(){
         path_cost=0;numnodes=0;
         astar_8_puzle(start,numnodes,path_cost,mt);
         cout<<"With misplaced heuristic pathcost:"<<path_cost<<" numnodes "<<numnodes<<"\n";
-        /*
         avg_misplaced_path += path_cost;
         avg_misplaced_nodes += numnodes;
         path_cost=0;numnodes=0;
@@ -518,11 +534,10 @@ void solve_8puzzle(){
         cout<<"With gasching heuristic pathcost:"<<path_cost<<" numnodes "<<numnodes<<"\n";
         avg_gasching_path += path_cost;
         avg_gasching_nodes += numnodes;
-        */
     }
     cout<<"Average Misplaced pathcost and numnodes:"<<float(avg_misplaced_path)/50<<" "<<float(avg_misplaced_nodes)/50<<"\n";
-    cout<<"Average Misplaced pathcost and numnodes:"<<float(avg_manhattan_path)/50<<" "<<float(avg_manhattan_nodes)/50<<"\n";
-    cout<<"Average Misplaced pathcost and numnodes:"<<float(avg_gasching_path)/50<<" "<<float(avg_gasching_nodes)/50<<"\n";
+    cout<<"Average manhattan pathcost and numnodes:"<<float(avg_manhattan_path)/50<<" "<<float(avg_manhattan_nodes)/50<<"\n";
+    cout<<"Average gasching pathcost and numnodes:"<<float(avg_gasching_path)/50<<" "<<float(avg_gasching_nodes)/50<<"\n";
     
 }
 
@@ -549,9 +564,10 @@ int main(){
         }
         cout<<"\n";
     }*/
-    state8 start = {std::string("296134758"),0,string("124896753")};
-    cout << "Running the DFS search on this\n";
+    //state8 start = {std::string("296134758"),0,string("124896753")};
+    //cout << "Running the DFS search on this\n";
     //misplaced_tiles mt;
-    gasching_hr mt;
-    astar_8_puzle(start,numnodes,path_cost,mt);
+    //gasching_hr mt;
+    //astar_8_puzle(start,numnodes,path_cost,mt);
+    solve_8puzzle(); 
 }
