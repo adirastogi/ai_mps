@@ -7,6 +7,7 @@
 #include <string>
 #include <set>
 #include <queue>
+#include <sys/time.h>
 using namespace std;
 
 #define BLUE 0
@@ -15,7 +16,9 @@ using namespace std;
 #define EMPTY 3
 #define MAX_X 6
 #define MAX_Y 6
-#define MAX_DEPTH 6
+#define MAX_DEPTH 3
+#define MAX_DEPTH_AB 6
+#define MAX_DEPTH_EM 3
 
 #define DEBUG 0
 #define myprintf(fmt, ...) if(DEBUG) printf(fmt, ##__VA_ARGS__);
@@ -36,13 +39,18 @@ class GameBoard{
     
     GameBoard(int,int,int,int,int);
     ~GameBoard();
-    int move_normal(coord& pos,int curragent,vector<coord>& s,bool sabotage);
+    int move_normal(coord& pos,int curragent,vector<coord>& s);
     void undo_move_normal(coord& pos,int curragent,int otheragent,vector<coord>& s);
+
+
+    void undo_move_sabotage(coord& movepos,int curr_agent,int other_agent,std::vector<coord>& sabotage_pos,bool sabotage);
+    int move_sabotage(coord& movepos,int curr_agent,std::vector<coord>& sabotage_pos,bool sabotage);
 
     void identify_blitz_pos(coord& pos, int curragent, vector<coord>& blitzpos,bool blitz);
     bool terminal_pos();
     void print_board(int);
     void print_board();
+    void reset();
 };
 /*initialization of the game */
 GameBoard::GameBoard(int n,int m, int mnagent, int mxagent, int nump=2):
@@ -50,7 +58,7 @@ numrows(n),numcols(m),minagent(mnagent),maxagent(mxagent),numplayers(nump){
     board = new int[numrows*numcols][2];
     for(int i=0;i<numrows;++i){
         for (int j=0;j<numcols;++j){
-            board[i*numcols+j][0] =
+            board[i*numcols+j][0] = 0;
             board[i*numcols+j][1] = EMPTY;
         }
     }
@@ -72,7 +80,7 @@ bool GameBoard::terminal_pos(){
     return full;
 }
 /* identify the blitz positions */
-void GameBoard::identify_blitz_pos(coord& movepos,int curr_agent,std::vector<coord>& blitz_pos,bool blitz){
+void GameBoard::identify_blitz_pos(coord& movepos,int curr_agent,std::vector<coord>& blitz_pos,bool blitz_move){
 
     int dirs[] = {-1,0,1,0};
     int num_same=0;
@@ -87,14 +95,14 @@ void GameBoard::identify_blitz_pos(coord& movepos,int curr_agent,std::vector<coo
         }
     }
     //if it is not adjacent to any of the same,then no blitzing possible, but sabotage still possible
-    if(num_same==0 && blitz)
+    if(num_same==0 && blitz_move)
         blitz_pos.clear();
 
 }
 /* function to change the Board state for the given player and using the given next move position*/
-int GameBoard::move_normal(coord& movepos,int curr_agent,std::vector<coord>& blitz_pos,bool sabotage=false){
+int GameBoard::move_normal(coord& movepos,int curr_agent,std::vector<coord>& blitz_pos){
     //check if you can blitz, if so , do it
-    identify_blitz_pos(movepos,curr_agent,blitz_pos,!sabotage);
+    identify_blitz_pos(movepos,curr_agent,blitz_pos,true);
     //should be adjacent to alteast one node of same color
     int other_agent = EMPTY;
     for(int i=0;i<blitz_pos.size();++i){
@@ -108,6 +116,32 @@ int GameBoard::move_normal(coord& movepos,int curr_agent,std::vector<coord>& bli
     total_util[curr_agent] += board[movepos.first*numcols+movepos.second][0];
     return other_agent;
 }
+
+int GameBoard::move_sabotage(coord& movepos,int curr_agent,std::vector<coord>& sabotage_pos,bool sabotage){
+    //check if you can sabotage. logic similar to blitz
+    int other_agent = EMPTY;
+    if(sabotage) {
+        identify_blitz_pos(movepos,curr_agent,sabotage_pos,false);
+    //should be adjacent to alteast one node of same color
+        for(int i=0;i<sabotage_pos.size();++i){
+            other_agent = board[sabotage_pos[i].first*numcols+sabotage_pos[i].second][1];
+            board[sabotage_pos[i].first*numcols+sabotage_pos[i].second][1]  = curr_agent;
+            total_util[curr_agent] += board[sabotage_pos[i].first*numcols+sabotage_pos[i].second][0];
+            total_util[other_agent] -= board[sabotage_pos[i].first*numcols+sabotage_pos[i].second][0];
+        } 
+        //now make the move on the requested space
+        board[movepos.first*numcols+movepos.second][1]  = curr_agent;
+        total_util[curr_agent] += board[movepos.first*numcols+movepos.second][0];
+        return other_agent;
+    }else{
+        //sabotage failed, your move position is converted to enemy's
+        other_agent = (curr_agent+1)%2;
+        board[movepos.first*numcols+movepos.second][1]  = other_agent;
+        total_util[other_agent] += board[movepos.first*numcols+movepos.second][0];
+        return other_agent;
+    }
+}
+
 /* undo the change to the board state */
 void GameBoard::undo_move_normal(coord& movepos,int curr_agent,int other_agent,std::vector<coord>& blitz_pos){
     //check if blitz was done
@@ -119,9 +153,30 @@ void GameBoard::undo_move_normal(coord& movepos,int curr_agent,int other_agent,s
     board[movepos.first*numcols+movepos.second][1]  = EMPTY;
     total_util[curr_agent] -= board[movepos.first*numcols+movepos.second][0];
 }
+
+/* undo the change to the board state */
+void GameBoard::undo_move_sabotage(coord& movepos,int curr_agent,int other_agent,std::vector<coord>& sabotage_pos,bool sabotage){
+    //check if sabotage was done
+    if(sabotage){
+        //restore the enemy positions
+        for(int i=0;i<sabotage_pos.size();++i){
+            board[sabotage_pos[i].first*numcols+sabotage_pos[i].second][1]  = other_agent;
+            total_util[curr_agent] -= board[sabotage_pos[i].first*numcols+sabotage_pos[i].second][0];
+            total_util[other_agent] += board[sabotage_pos[i].first*numcols+sabotage_pos[i].second][0];
+        } 
+        board[movepos.first*numcols+movepos.second][1]  = EMPTY;
+        total_util[curr_agent] -= board[movepos.first*numcols+movepos.second][0];
+    }else{
+        //sabotage had failed
+        board[movepos.first*numcols+movepos.second][1]  = EMPTY;
+        total_util[other_agent] -= board[movepos.first*numcols+movepos.second][0];
+    }
+}
+
 /* print the current state of the board for debug */
 void GameBoard::print_board(int indent){
-    return;
+    if(indent<0)indent = 0;
+    else if(!DEBUG) return;
     for(int i=0;i<numrows;++i){
         cout<<std::string(indent,'\t');
         for(int j=0;j<numcols;++j){
@@ -136,9 +191,18 @@ void GameBoard::print_board(int indent){
         cout<<"\n";
     }
 }
+void GameBoard::reset(){
+    for(int i=0;i<numrows;++i){
+        for (int j=0;j<numcols;++j){
+            board[i*numcols+j][1] = EMPTY;
+        }
+    }
+    for (int i=0;i<numplayers;++i)
+        total_util[i]=0;
+}
 /* For normal output printing */
 void GameBoard::print_board(){
-    print_board(0);
+    print_board(-1);
 }
 
 /*===============================================================================*/
@@ -374,7 +438,7 @@ int AlphaBeta<Order,Util>::play(coord& next_move,int move_color,int& numnodes){
 template <class Order,class Util>
 int  AlphaBeta<Order,Util>::alphabeta(coord& curpos, std::vector<coord>& path_list,int depth,int curr_agent,int alpha, int beta, int& numnodes){
     //max depth hit, should I use a different utility function ?
-    if(depth==MAX_DEPTH){
+    if(depth==MAX_DEPTH_AB){
         return util.get_utility(curpos);
     }
     //terminal state reached
@@ -473,8 +537,8 @@ class ExpectiMiniMax{
 
     public:
     ExpectiMiniMax(GameBoard* b,double gamma);
-    double expectiminimax(coord& curpos, coord& best_move, int depth, int curr_agent,int &numnodes);
-    double  play(coord& next_move,int move_color,int& numnodes);
+    double expectiminimax(coord& curpos, coord& best_move, int depth, int curr_agent,int &numnodes,bool& sabotage_move);
+    double  play(coord& next_move,int move_color,int& numnodes,bool& sabotage_move);
 };
 
 /* constructor */
@@ -484,17 +548,17 @@ board(b),util(b),gamma(g){
 }
 /* return the next move based on minimax stratgy for the game board */
 template<class Order,class Util>
-double ExpectiMiniMax<Order,Util>::play(coord& next_move,int move_color,int& numnodes){
+double ExpectiMiniMax<Order,Util>::play(coord& next_move,int move_color,int& numnodes,bool& sabotage_move){
     coord startpos(0,0);
-    double util = expectiminimax(startpos,next_move,0,move_color,numnodes);
+    double util = expectiminimax(startpos,next_move,0,move_color,numnodes,sabotage_move);
     return util;
 }
 
 /* calculates the minimax value of each state and builds the optimal game path */
 template <class Order,class Util>
-double  ExpectiMiniMax<Order,Util>::expectiminimax(coord& curpos, coord& best_move,int depth,int curr_agent,int& numnodes){
+double  ExpectiMiniMax<Order,Util>::expectiminimax(coord& curpos, coord& best_move,int depth,int curr_agent,int& numnodes,bool& sabotage_move){
     //max depth hit (double the max depth here because of the chance nodes */
-    if(depth==MAX_DEPTH){
+    if(depth==MAX_DEPTH_EM){
         return util.get_utility(curpos);
     }
     //terminal state reached
@@ -505,6 +569,7 @@ double  ExpectiMiniMax<Order,Util>::expectiminimax(coord& curpos, coord& best_mo
         coord nextpos;
         double max_util=INT_MIN;
         coord max_pos=curpos;
+        bool max_util_sabotage =false;
 
         Order iterator(board,curr_agent);
         while((nextpos=iterator.next_pos(curpos,board->minagent))!=iterator.end()){
@@ -512,6 +577,8 @@ double  ExpectiMiniMax<Order,Util>::expectiminimax(coord& curpos, coord& best_mo
             myprintf("\n%sThe board position tried for player max at depth %d is %d,%d\n",std::string(depth,'\t').c_str(),depth,nextpos.first,nextpos.second);
             int other_agent;
             coord returnpos; //duumy for the return
+            bool sabotage_done = false;
+            bool return_sabotage ;//dummy
 
             //first evaluate all regular moves (i.e. para drop and blitz)
             std::vector<coord> modified_pos;
@@ -519,29 +586,47 @@ double  ExpectiMiniMax<Order,Util>::expectiminimax(coord& curpos, coord& best_mo
             myprintf("\n%sThe board after default move:\n",std::string(depth,'\t').c_str());
             board->print_board(depth);
             if(modified_pos.size()>0) myprintf("\n%sBlitzing!\n",std::string(depth,'\t').c_str());
-            double util_regular = expectiminimax(nextpos,returnpos,depth+1,board->minagent,numnodes);
+            double util_regular = expectiminimax(nextpos,returnpos,depth+1,board->minagent,numnodes,return_sabotage);
             board->undo_move_normal(nextpos,curr_agent,other_agent,modified_pos);
             myprintf("\n%sreceived utility with default %f\n",std::string(depth,'\t').c_str(),util_regular);
 
-            //now try out the sabotage move 
+            //next try out the sabotage move
+            //now try out the positive sabotage move 
             modified_pos.clear();
-            other_agent = board->move_normal(nextpos,curr_agent,modified_pos,true);
-            myprintf("\n%sThe board after sabotage move:\n",std::string(depth,'\t').c_str());
+            other_agent = board->move_sabotage(nextpos,curr_agent,modified_pos,true);
+            myprintf("\n%sThe board after sabotage move(+):\n",std::string(depth,'\t').c_str());
             board->print_board(depth);
-            double util_sabotage = expectiminimax(nextpos,returnpos,depth+1,board->minagent,numnodes);
-            board->undo_move_normal(nextpos,curr_agent,other_agent,modified_pos);
+            double util_sabotage_pos = expectiminimax(nextpos,returnpos,depth+1,board->minagent,numnodes,return_sabotage);
+            board->undo_move_sabotage(nextpos,curr_agent,other_agent,modified_pos,true);
+            //now try out the negative sabotage move            
+            modified_pos.clear();
+            other_agent = board->move_sabotage(nextpos,curr_agent,modified_pos,false);
+            myprintf("\n%sThe board after sabotage move(-):\n",std::string(depth,'\t').c_str());
+            board->print_board(depth);
+            double util_sabotage_neg = expectiminimax(nextpos,returnpos,depth+1,board->minagent,numnodes,return_sabotage);
+            board->undo_move_sabotage(nextpos,curr_agent,other_agent,modified_pos,false);
+
+            double util_sabotage = (1-gamma)*util_sabotage_neg+gamma*util_sabotage_pos;
             myprintf("\n%sreceived utility with sabotage %f\n",std::string(depth,'\t').c_str(),util_sabotage);
-                    
+            /* take the max of the two */
+            double util = 0;
+            if(util_sabotage > util_regular){
+                sabotage_done = true;
+                util = util_sabotage;
+            }else {
+                sabotage_done =  false;
+                util = util_regular;
+            }
             //cacluate total util 
-            double util = (1-gamma)*util_regular+gamma*util_sabotage;
-            myprintf("\n%sTotal utility for max %f\n",std::string(depth,'\t').c_str(),util);
-            
+            //myprintf("\n%sTotal utility for max %f\n",std::string(depth,'\t').c_str(),util); 
             if (util>max_util){
                 max_util = util;
+                max_util_sabotage = sabotage_done;
                 max_pos = nextpos;
             }
         }
         best_move = max_pos;
+        sabotage_move = max_util_sabotage;
         myprintf("\n%sBest move for max at depth %d: %d,%d with util %f",std::string(depth,'\t').c_str(),depth,best_move.first,best_move.second,max_util);
         return max_util;
     }else if(curr_agent==board->minagent){
@@ -550,6 +635,7 @@ double  ExpectiMiniMax<Order,Util>::expectiminimax(coord& curpos, coord& best_mo
         coord nextpos;
         coord min_pos = curpos;
         double min_util=INT_MAX;
+        double min_util_sabotage = false;
 
         Order iterator(board,curr_agent);
         while((nextpos=iterator.next_pos(curpos,board->maxagent))!=iterator.end()){
@@ -557,6 +643,8 @@ double  ExpectiMiniMax<Order,Util>::expectiminimax(coord& curpos, coord& best_mo
             myprintf("\n%sThe board position tried for player min at depth %d is %d,%d\n",std::string(depth,'\t').c_str(),depth,nextpos.first,nextpos.second);
             int other_agent;
             coord returnpos; //duumy for the return
+            bool sabotage_done = false;
+            bool return_sabotage; //dummy
 
             //first evaluate all regular moves (i.e. para drop and blitz)
             std::vector<coord> modified_pos;
@@ -564,28 +652,45 @@ double  ExpectiMiniMax<Order,Util>::expectiminimax(coord& curpos, coord& best_mo
             myprintf("\n%sThe board after default move:\n",std::string(depth,'\t').c_str());
             board->print_board(depth);
             if(modified_pos.size()>0) myprintf("\n%sBlitzing!\n",std::string(depth,'\t').c_str());
-            double util_regular = expectiminimax(nextpos,returnpos,depth+1,board->maxagent,numnodes);
+            double util_regular = expectiminimax(nextpos,returnpos,depth+1,board->maxagent,numnodes,return_sabotage);
             board->undo_move_normal(nextpos,curr_agent,other_agent,modified_pos);
             myprintf("\n%sreceived utility with default %f\n",std::string(depth,'\t').c_str(),util_regular);
-
-            //now try out the sabotage move 
+            
+            //now try out the sabotage move
+            //now try out the positive sabotage move 
             modified_pos.clear();
-            other_agent = board->move_normal(nextpos,curr_agent,modified_pos,true);
-            myprintf("\n%sThe board after sabotage move:\n",std::string(depth,'\t').c_str());
+            other_agent = board->move_sabotage(nextpos,curr_agent,modified_pos,true);
+            myprintf("\n%sThe board after sabotage move(+):\n",std::string(depth,'\t').c_str());
             board->print_board(depth);
-            double util_sabotage = expectiminimax(nextpos,returnpos,depth+1,board->maxagent,numnodes);
-            board->undo_move_normal(nextpos,curr_agent,other_agent,modified_pos);
+            double util_sabotage_pos = expectiminimax(nextpos,returnpos,depth+1,board->maxagent,numnodes,return_sabotage);
+            board->undo_move_sabotage(nextpos,curr_agent,other_agent,modified_pos,true);
+            //now try out the negative sabotage move            
+            modified_pos.clear();
+            other_agent = board->move_sabotage(nextpos,curr_agent,modified_pos,false);
+            myprintf("\n%sThe board after sabotage move(-):\n",std::string(depth,'\t').c_str());
+            board->print_board(depth);
+            double util_sabotage_neg = expectiminimax(nextpos,returnpos,depth+1,board->maxagent,numnodes,return_sabotage);
+            board->undo_move_sabotage(nextpos,curr_agent,other_agent,modified_pos,false);
+
+            double util_sabotage = (1-gamma)*util_sabotage_neg+gamma*util_sabotage_pos;
             myprintf("\n%sreceived utility with sabotage %f\n",std::string(depth,'\t').c_str(),util_sabotage);
-                    
-            //cacluate total util 
-            double util = (1-gamma)*util_regular+gamma*util_sabotage;
-            myprintf("\n%sTotal utility for min %f\n",std::string(depth,'\t').c_str(),util);
+            /* take the min of the two */
+            double util = 0;
+            if(util_sabotage < util_regular){
+                sabotage_done = true;
+                util = util_sabotage;
+            }else {
+                sabotage_done = false;
+                util = util_regular;
+            }
             if (util<min_util){
                 min_util = util;
+                min_util_sabotage = sabotage_done;
                 min_pos = nextpos;
             }
         }
         best_move = min_pos;
+        sabotage_move = min_util_sabotage;
         myprintf("\n%sBest move for min at depth %d: %d,%d with util %f",std::string(depth,'\t').c_str(),depth,best_move.first,best_move.second,min_util);
         return min_util;
     }else{
@@ -594,8 +699,18 @@ double  ExpectiMiniMax<Order,Util>::expectiminimax(coord& curpos, coord& best_mo
     }
 }
 /* =====================================================================*/
-
-
+/* function for time calculatio from : http://stackoverflow.com/questions/1861294/how-to-calculate-execution-time-of-a-code-snippet-in-c */
+typedef unsigned long long timestamp_t;
+/* returns timestamp in microseconds */
+timestamp_t get_timestamp ()
+{
+  struct timeval now;
+  gettimeofday (&now, NULL);
+  return  now.tv_usec + (timestamp_t)now.tv_sec * 1000000;
+}
+typedef MiniMax<DefaultMoveOrder,DefaultUtility> minimaxagent;
+typedef ExpectiMiniMax<DefaultMoveOrder,DefaultUtility> expectiagent;
+typedef AlphaBeta<PriorityMoveOrder,DefaultUtility> abagent;
 /* function to simulate gameplay , with Agent1 taking blue and going first*/
 template<class Agent1, class Agent2>
 void play_game(GameBoard& board){
@@ -606,19 +721,29 @@ void play_game(GameBoard& board){
     std::vector<coord> move_arr1,move_arr2;
     /* till the game finishes*/
     int total_1=0,total_2=0;
+    timestamp_t time1=0, time2=0;
     int nrounds = 0;
+    timestamp_t t0,t1;
     while(!board.terminal_pos()){
         nrounds++;
         coord a1_move,a2_move;
         int numnodes1,numnodes2;
+
+        t0 = get_timestamp();
         double util1 = a1.play(a1_move,BLUE,numnodes1);
-        printf("\nPlayer BLUE moved to position %d,%d with util: %f and number of nodes expanded: %d\n",a1_move.first,a1_move.second,util1,numnodes2);
+        t1 = get_timestamp();
+        time1 += (t1-t0)/1000.0L; 
         total_1+=numnodes1;
+        printf("\nPlayer BLUE moved to position %d,%d with util: %f and number of nodes expanded: %d\n",a1_move.first,a1_move.second,util1,numnodes1);
         board.move_normal(a1_move,BLUE,move_arr1); 
         board.print_board();
+
+        t0 = get_timestamp();
         double util2 = a2.play(a2_move,GREEN,numnodes2);
-        printf("\nPlayer GREEN moved to position %d,%d with util: %f and number of nodes expanded :%d\n",a2_move.first,a2_move.second,util2,numnodes2);
+        t1 = get_timestamp();
+        time2 += (t1-t0)/1000.0L; 
         total_2+=numnodes2;
+        printf("\nPlayer GREEN moved to position %d,%d with util: %f and number of nodes expanded :%d\n",a2_move.first,a2_move.second,util2,numnodes2);
         board.move_normal(a2_move,GREEN,move_arr2);
         board.print_board();
     }
@@ -626,13 +751,88 @@ void play_game(GameBoard& board){
     board.print_board();
     cout<<"\nThe final scores of the players are \n";
     cout<<"\nBLUE:"<<board.total_util[BLUE]<<" "<<"GREEN:"<<board.total_util[GREEN];
+    cout<<"\nThe total number of nodes expanded per player are \n";
+    cout<<"\nBLUE:"<<total_1<<" "<<"GREEN:"<<total_2;
     cout<<"\nThe average number of nodes expanded per move are \n";
     cout<<"\nBLUE:"<<total_1/nrounds<<" "<<"GREEN:"<<total_2/nrounds;
+    cout<<"\nThe average time taken  in ms per move is \n";
+    cout<<"\nBLUE:"<<(double)time1/nrounds<<" "<<"GREEN:"<<(double)time2/nrounds;
      
 }
-typedef MiniMax<DefaultMoveOrder,DefaultUtility> minimaxagent;
-typedef ExpectiMiniMax<DefaultMoveOrder,DefaultUtility> expectiagent;
-typedef AlphaBeta<PriorityMoveOrder,DefaultUtility> abagent;
+void play_expectiminimax(GameBoard& board){
+    double gamma_vals[]  = {0.2,0.4,0.6,0.8,1.0};
+    for(int i=0;i<5;++i){
+        //running average of total scores after each game        
+        int total_1=0,total_2=0;
+        int total_sabotage=0;
+
+        for(int j=0;j<10;++j){
+            double gamma = gamma_vals[i];
+            cout<<"\n\tPlaying iteration "<<j<<"\n";
+            timestamp_t time1=0, time2=0;
+            int nrounds = 0;
+            int numsabotage=0;
+            timestamp_t t0,t1;
+
+            //intialize the agents and the board
+            expectiagent a1(&board,gamma),a2(&board,gamma);
+            board.reset();
+
+            while(!board.terminal_pos()){
+                nrounds++;
+                coord a1_move,a2_move;
+                vector<coord> move_arr1,move_arr2; //dummy
+                int numnodes1,numnodes2;
+                bool sabotage_move;
+
+                t0 = get_timestamp();
+                double util1 = a1.play(a1_move,BLUE,numnodes1,sabotage_move);
+                t1 = get_timestamp();
+                time1 += (t1-t0)/1000.0L; 
+                total_1+=numnodes1;
+                printf("\n\t\tPlayer BLUE moved to position %d,%d with util: %f and number of nodes expanded: %d\n",a1_move.first,a1_move.second,util1,numnodes1);
+                if(sabotage_move){
+                    //see if sabotage move is successfule
+                    bool success = (rand()%10<(int)(10*gamma))?true:false;
+                    board.move_sabotage(a1_move,BLUE,move_arr1,success); 
+                    numsabotage++;
+                }
+                board.print_board();
+
+                t0 = get_timestamp();
+                double util2 = a2.play(a2_move,GREEN,numnodes2,sabotage_move);
+                t1 = get_timestamp();
+                time2 += (t1-t0)/1000.0L; 
+                total_2+=numnodes2;
+                printf("\n\t\tPlayer GREEN moved to position %d,%d with util: %f and number of nodes expanded :%d\n",a2_move.first,a2_move.second,util2,numnodes2);
+                if(sabotage_move){
+                    //see if sabotage move is successful 
+                    bool success = (rand()%10<(int)(10*gamma))?true:false;
+                    board.move_sabotage(a1_move,BLUE,move_arr1,success); 
+                    numsabotage++;
+                }
+                board.print_board();
+            }
+
+            //per game stats
+            cout<<"\n\tThe average time taken  in ms per move is \n";
+            cout<<"\n\tBLUE:"<<(double)time1/nrounds<<" "<<"GREEN:"<<(double)time2/nrounds;
+            cout<<"\n\tThe final state of the board after iteration"<<j<<" is \n";
+            board.print_board();
+            cout<<"\n\tThe final scores of the players are \n";
+            cout<<"\n\tBLUE:"<<board.total_util[BLUE]<<" "<<"GREEN:"<<board.total_util[GREEN];
+            
+            //running averages
+            total_1 += board.total_util[BLUE];
+            total_2 += board.total_util[GREEN];
+            total_sabotage += numsabotage;
+        }
+
+        cout<<"\nThe average score of the players are \n";
+        cout<<"\nBLUE:"<<total_1/10<<" "<<"GREEN:"<<total_2/10;
+        cout<<"\nThe average number if sabotages is \n"<<total_sabotage/10;
+    }
+}
 void test_minimax(GameBoard &b){
     minimaxagent algo(&b) ;
     std::vector<coord> move_list;
@@ -660,7 +860,8 @@ void test_exxpectiminimax(GameBoard &b){
     coord startpos(0,0);
     coord best_move;
     int numnodes;
-    int root_util = algo.expectiminimax(startpos,best_move,0,b.maxagent,numnodes);
+    bool return_sabotage;
+    int root_util = algo.expectiminimax(startpos,best_move,0,b.maxagent,numnodes,return_sabotage);
     cout<<"\nThe best move for max is "<<best_move.first<<","<<best_move.second;
     cout<<"\nTotal utility "<<root_util;
 }
@@ -685,6 +886,6 @@ int main(){
     //test_minimax(b);
     //test_alphabeta(b);
     //test_exxpectiminimax(b);
-    play_game<abagent,abagent>(b);
+    play_game<abagent,minimaxagent>(b);
     return 0;
 }
