@@ -13,9 +13,12 @@ using namespace std;
 #define GREEN 1
 #define CHANCE 2
 #define EMPTY 3
-#define MAX_X 3
-#define MAX_Y 3
-#define MAX_DEPTH 10
+#define MAX_X 6
+#define MAX_Y 6
+#define MAX_DEPTH 6
+
+#define DEBUG 0
+#define myprintf(fmt, ...) if(DEBUG) printf(fmt, ##__VA_ARGS__);
 
 typedef std::pair<int,int> coord;
 
@@ -39,6 +42,7 @@ class GameBoard{
     void identify_blitz_pos(coord& pos, int curragent, vector<coord>& blitzpos,bool blitz);
     bool terminal_pos();
     void print_board(int);
+    void print_board();
 };
 /*initialization of the game */
 GameBoard::GameBoard(int n,int m, int mnagent, int mxagent, int nump=2):
@@ -51,6 +55,8 @@ numrows(n),numcols(m),minagent(mnagent),maxagent(mxagent),numplayers(nump){
         }
     }
     total_util = new int[numplayers]; 
+    for (int i=0;i<numplayers;++i)
+        total_util[i]=0;
 }
 
 /* clean up the memory */
@@ -113,8 +119,9 @@ void GameBoard::undo_move_normal(coord& movepos,int curr_agent,int other_agent,s
     board[movepos.first*numcols+movepos.second][1]  = EMPTY;
     total_util[curr_agent] -= board[movepos.first*numcols+movepos.second][0];
 }
-/* print the current state of the board */
-void GameBoard::print_board(int indent=0){
+/* print the current state of the board for debug */
+void GameBoard::print_board(int indent){
+    return;
     for(int i=0;i<numrows;++i){
         cout<<std::string(indent,'\t');
         for(int j=0;j<numcols;++j){
@@ -128,6 +135,10 @@ void GameBoard::print_board(int indent=0){
         }
         cout<<"\n";
     }
+}
+/* For normal output printing */
+void GameBoard::print_board(){
+    print_board(0);
 }
 
 /*===============================================================================*/
@@ -143,8 +154,47 @@ class DefaultUtility{
     }
 };
 /*==================================================================================*/
-/* class for implementing the move ordering,right now implements greedy move ordering*/
+
 class DefaultMoveOrder{
+    
+    typedef int (*board_type)[2];
+    GameBoard * board;      //the sate of the board for which the move order is being evaluated
+    int curr_agent;         //agent for which the move order is being evaluated
+    std::vector<board_type> vec;
+    std::vector<board_type>::iterator it;
+    public:
+    DefaultMoveOrder(GameBoard* b, int cagent):board(b),curr_agent(cagent){
+    /*store the pointers to each position in the board in a vector and then do as you please(sort, pq etc)*/
+        for(int i=0;i<board->numrows;++i)
+            for(int j=0;j<board->numcols;++j)
+                vec.push_back(&board->board[i*(board->numcols)+j]);
+        it = vec.begin();
+    }
+    /* returns the offset from the pointer*/
+    coord calculate_offsets(board_type pos){
+        int rowpos = (pos-board->board)/(board->numcols);
+        int colpos = (pos-board->board)%(board->numcols);
+        return coord(rowpos,colpos);
+    } 
+    /* right now, just returns the next avaialable pos*/
+    coord next_pos(coord& curpos,int agent){
+        /* find the next empty position */
+        while(it!=vec.end() && (*(*it))[1]!=EMPTY) ++it; 
+        if(it!=vec.end()) {
+            coord retcord = calculate_offsets(*it);
+            ++it;
+            return retcord;
+        }
+        else return end();
+    }
+
+    coord end(){
+        return coord(-1,-1);
+    }
+};
+
+/* class for implementing the move ordering,right now implements greedy move ordering*/
+class PriorityMoveOrder{
     typedef int (*board_type)[2];
     struct priority_comp{
         public:
@@ -158,7 +208,7 @@ class DefaultMoveOrder{
     int curr_agent;         //agent for which the move order is being evaluated
     std::priority_queue<board_type,std::vector<board_type>,priority_comp> pq;   //priority queue for ordering moves
     public:
-    DefaultMoveOrder(GameBoard* b,int cagent):board(b),curr_agent(cagent){
+    PriorityMoveOrder(GameBoard* b,int cagent):board(b),curr_agent(cagent){
     /*store the pointers to each position in the board in a vector and then do as you please(sort, pq etc)*/
         for(int i=0;i<board->numrows;++i)
             for(int j=0;j<board->numcols;++j)
@@ -170,7 +220,7 @@ class DefaultMoveOrder{
         int colpos = (pos-board->board)%(board->numcols);
         return coord(rowpos,colpos);
     } 
-    /* right now, just returns the next avaialable pos*/
+    /* right now, just returns the next avaialable pos in prority order*/
     coord next_pos(coord& curpos,int agent){
         while(!pq.empty() && (*pq.top())[1]!=EMPTY)
             pq.pop();
@@ -199,8 +249,8 @@ class MiniMax{
 
     public:
     MiniMax(GameBoard* b);
-    int minimax(coord& curpos, std::vector<coord>& path_list, int depth, int curr_agent);
-    int  play(coord& next_move,int move_color);
+    int minimax(coord& curpos, std::vector<coord>& path_list, int depth, int curr_agent,int& numnodes);
+    int  play(coord& next_move,int move_color,int& numnodes);
 };
 
 /* constructor */
@@ -210,17 +260,17 @@ board(b),util(b){
 }
 /* return the next move based on minimax stratgy for the game board */
 template<class Order,class Util>
-int MiniMax<Order,Util>::play(coord& next_move,int move_color){
+int MiniMax<Order,Util>::play(coord& next_move,int move_color,int& numnodes){
     coord startpos(0,0);
     std::vector<coord> next_moves;
-    int util = minimax(startpos,next_moves,0,move_color);
-    next_move =  *next_moves.rend();
+    int util = minimax(startpos,next_moves,0,move_color,numnodes);
+    next_move =  *next_moves.rbegin();
     return util;
 }
 
 /* calculates the minimax value of each state and builds the optimal game path */
 template <class Order,class Util>
-int  MiniMax<Order,Util>::minimax(coord& curpos, std::vector<coord>& path_list,int depth,int curr_agent){
+int  MiniMax<Order,Util>::minimax(coord& curpos, std::vector<coord>& path_list,int depth,int curr_agent,int& numnodes){
     //max depth hit
     if(depth==MAX_DEPTH){
         return util.get_utility(curpos);
@@ -229,6 +279,8 @@ int  MiniMax<Order,Util>::minimax(coord& curpos, std::vector<coord>& path_list,i
     if(board->terminal_pos()){
         return util.get_utility(curpos);;
     }else if(curr_agent==board->maxagent){ 
+        //every time the function is called a node is expanded
+        numnodes++;
         coord nextpos;
         int max_util=INT_MIN;
         coord max_pos=curpos;
@@ -239,13 +291,13 @@ int  MiniMax<Order,Util>::minimax(coord& curpos, std::vector<coord>& path_list,i
             //change the board state(including blitzing) 
             std::vector<coord> blitz_pos;
             int other_agent = board->move_normal(nextpos,curr_agent,blitz_pos);
-            if(blitz_pos.size()>0) printf("\nBlitzing!");
+            if(blitz_pos.size()>0) myprintf("\n%sBlitzing!",std::string(depth,'\t').c_str());
             //try out the move
             std::vector<coord> path_list_child;
-            printf("\n%sThe board position tried for player max at depth %d is %d,%d\n",std::string(depth,'\t').c_str(),depth,nextpos.first,nextpos.second);
+            myprintf("\n%sThe board position tried for player max at depth %d is %d,%d\n",std::string(depth,'\t').c_str(),depth,nextpos.first,nextpos.second);
             board->print_board(depth);
-            int util = minimax(nextpos,path_list_child,depth+1,board->minagent);
-            printf("\n%sreceived utility %d\n",std::string(depth,'\t').c_str(),util);
+            int util = minimax(nextpos,path_list_child,depth+1,board->minagent,numnodes);
+            myprintf("\n%sreceived utility %d\n",std::string(depth,'\t').c_str(),util);
             if (util>max_util){
                 max_util = util;
                 max_pos = nextpos;
@@ -268,13 +320,13 @@ int  MiniMax<Order,Util>::minimax(coord& curpos, std::vector<coord>& path_list,i
             //change the board state(including blitzing) 
             std::vector<coord> blitz_pos;
             int other_agent = board->move_normal(nextpos,curr_agent,blitz_pos);
-            if(blitz_pos.size()>0) printf("\nBlitzing!");
+            if(blitz_pos.size()>0) myprintf("\n%sBlitzing!",std::string(depth,'\t').c_str());
             //try out the move
             std::vector<coord> path_list_child;
-            printf("\n%sThe board position tried for player min at depth %d is %d,%d\n",std::string(depth,'\t').c_str(),depth,nextpos.first,nextpos.second);
+            myprintf("\n%sThe board position tried for player min at depth %d is %d,%d\n",std::string(depth,'\t').c_str(),depth,nextpos.first,nextpos.second);
             board->print_board(depth);
-            int util = minimax(nextpos,path_list_child,depth+1,board->maxagent);
-            printf("\n%sreceived utility %d\n",std::string(depth,'\t').c_str(),util);
+            int util = minimax(nextpos,path_list_child,depth+1,board->maxagent,numnodes);
+            myprintf("\n%sreceived utility %d\n",std::string(depth,'\t').c_str(),util);
             if (util<min_util){
                 min_util = util;
                 min_pos = nextpos;
@@ -287,7 +339,7 @@ int  MiniMax<Order,Util>::minimax(coord& curpos, std::vector<coord>& path_list,i
         path_list = best_path_list;
         return min_util;
     }else {
-        printf("Error state of game");
+        myprintf("Error state of game");
         exit(1);
     }
 }
@@ -300,16 +352,27 @@ class AlphaBeta{
     public:
 
     AlphaBeta(GameBoard* b);
-    int alphabeta(coord& curpos, std::vector<coord>& path_list,int depth, int curr_agent,int alpha, int beta);
-    //int play(coord& next_move,int move_color);
+    int alphabeta(coord& curpos, std::vector<coord>& path_list,int depth, int curr_agent,int alpha, int beta,int& numnodes);
+    int play(coord& next_move,int move_color,int& numnodes);
 
 };
 template<class Order, class Util>
 AlphaBeta<Order, Util>::AlphaBeta(GameBoard* b):board(b),util(b){
 }
+/* return the next move based on minimax stratgy for the game board */
+template<class Order,class Util>
+int AlphaBeta<Order,Util>::play(coord& next_move,int move_color,int& numnodes){
+    coord startpos(0,0);
+    std::vector<coord> next_moves;
+    int util = alphabeta(startpos,next_moves,0,move_color,INT_MIN,INT_MAX,numnodes);
+    next_move =  *next_moves.rbegin();
+    return util;
+}
+
+/* calculates the minimax value of each state and builds the optimal game path */
 /* function to calculate minimax value using alpha beta */
 template <class Order,class Util>
-int  AlphaBeta<Order,Util>::alphabeta(coord& curpos, std::vector<coord>& path_list,int depth,int curr_agent,int alpha, int beta){
+int  AlphaBeta<Order,Util>::alphabeta(coord& curpos, std::vector<coord>& path_list,int depth,int curr_agent,int alpha, int beta, int& numnodes){
     //max depth hit, should I use a different utility function ?
     if(depth==MAX_DEPTH){
         return util.get_utility(curpos);
@@ -318,6 +381,7 @@ int  AlphaBeta<Order,Util>::alphabeta(coord& curpos, std::vector<coord>& path_li
     if(board->terminal_pos()){
         return util.get_utility(curpos);;
     }else if(curr_agent==board->maxagent){ 
+        numnodes++;
         coord nextpos;
         int max_util=alpha;
         coord max_pos=curpos;
@@ -328,13 +392,13 @@ int  AlphaBeta<Order,Util>::alphabeta(coord& curpos, std::vector<coord>& path_li
             //change the board state(including blitzing) 
             std::vector<coord> blitz_pos;
             int other_agent = board->move_normal(nextpos,curr_agent,blitz_pos);
-            if(blitz_pos.size()>0) printf("\nBlitzing!");
+            if(blitz_pos.size()>0) myprintf("\n%sBlitzing!",std::string(depth,'\t').c_str());
             //try out the move
             std::vector<coord> path_list_child;
-            printf("\n%sThe board position tried for player max at depth %d is %d,%d\n",std::string(depth,'\t').c_str(),depth,nextpos.first,nextpos.second);
+            myprintf("\n%sThe board position tried for player max at depth %d is %d,%d\n",std::string(depth,'\t').c_str(),depth,nextpos.first,nextpos.second);
             board->print_board(depth);
-            int util = alphabeta(nextpos,path_list_child,depth+1,board->minagent,alpha,beta);
-            printf("\n%sreceived utility %d\n",std::string(depth,'\t').c_str(),util);
+            int util = alphabeta(nextpos,path_list_child,depth+1,board->minagent,alpha,beta,numnodes);
+            myprintf("\n%sreceived utility %d\n",std::string(depth,'\t').c_str(),util);
             if (util>max_util){
                 max_util = util;
                 max_pos = nextpos;
@@ -345,7 +409,7 @@ int  AlphaBeta<Order,Util>::alphabeta(coord& curpos, std::vector<coord>& path_li
             //prune against beta
             if(max_util >= beta) {
                 //just return after setting the appropriate variables
-                printf("\n%sPruning against beta on util %d and {%d,%d}\n",std::string(depth,'\t').c_str(),max_util,alpha,beta);
+                myprintf("\n%sPruning against beta on util %d and {%d,%d}\n",std::string(depth,'\t').c_str(),max_util,alpha,beta);
                 best_path_list.push_back(max_pos);
                 path_list = best_path_list;
                 return max_util;         
@@ -366,13 +430,13 @@ int  AlphaBeta<Order,Util>::alphabeta(coord& curpos, std::vector<coord>& path_li
             //change the board state(including blitzing) 
             std::vector<coord> blitz_pos;
             int other_agent = board->move_normal(nextpos,curr_agent,blitz_pos);
-            if(blitz_pos.size()>0) printf("\nBlitzing!");
+            if(blitz_pos.size()>0) myprintf("\n%sBlitzing!",std::string(depth,'\t').c_str());
             //try out the move
             std::vector<coord> path_list_child;
-            printf("\n%sThe board position tried for player min at depth %d is %d,%d\n",std::string(depth,'\t').c_str(),depth,nextpos.first,nextpos.second);
+            myprintf("\n%sThe board position tried for player min at depth %d is %d,%d\n",std::string(depth,'\t').c_str(),depth,nextpos.first,nextpos.second);
             board->print_board(depth);
-            int util = alphabeta(nextpos,path_list_child,depth+1,board->maxagent,alpha,beta);
-            printf("\n%sreceived utility %d\n",std::string(depth,'\t').c_str(),util);
+            int util = alphabeta(nextpos,path_list_child,depth+1,board->maxagent,alpha,beta,numnodes);
+            myprintf("\n%sreceived utility %d\n",std::string(depth,'\t').c_str(),util);
             if (util<min_util){
                 min_util = util;
                 min_pos = nextpos;
@@ -383,7 +447,7 @@ int  AlphaBeta<Order,Util>::alphabeta(coord& curpos, std::vector<coord>& path_li
             //prune against alpha
             if(min_util <= alpha) {
                 //just return after setting the appropriate variables
-                printf("\n%sPruning against alpha on util %d and {%d,%d}\n",std::string(depth,'\t').c_str(),min_util,alpha,beta);
+                myprintf("\n%sPruning against alpha on util %d and {%d,%d}\n",std::string(depth,'\t').c_str(),min_util,alpha,beta);
                 best_path_list.push_back(min_pos);
                 path_list = best_path_list;
                 return min_util;         
@@ -394,7 +458,7 @@ int  AlphaBeta<Order,Util>::alphabeta(coord& curpos, std::vector<coord>& path_li
         path_list = best_path_list;
         return min_util;
     }else {
-        printf("Error state of game");
+        myprintf("Error state of game");
         exit(1);
     }
 }
@@ -409,26 +473,26 @@ class ExpectiMiniMax{
 
     public:
     ExpectiMiniMax(GameBoard* b,double gamma);
-    double expectiminimax(coord& curpos, coord& best_move, int depth, int curr_agent);
-    double  play(coord& next_move,int move_color);
+    double expectiminimax(coord& curpos, coord& best_move, int depth, int curr_agent,int &numnodes);
+    double  play(coord& next_move,int move_color,int& numnodes);
 };
 
 /* constructor */
 template <class Order,class Util>
-ExpectiMiniMax<Order,Util>::ExpectiMiniMax(GameBoard* b,double g):
+ExpectiMiniMax<Order,Util>::ExpectiMiniMax(GameBoard* b,double g=0.2):
 board(b),util(b),gamma(g){
 }
 /* return the next move based on minimax stratgy for the game board */
 template<class Order,class Util>
-double ExpectiMiniMax<Order,Util>::play(coord& next_move,int move_color){
+double ExpectiMiniMax<Order,Util>::play(coord& next_move,int move_color,int& numnodes){
     coord startpos(0,0);
-    double util = expectiminimax(startpos,next_move,0,move_color);
+    double util = expectiminimax(startpos,next_move,0,move_color,numnodes);
     return util;
 }
 
 /* calculates the minimax value of each state and builds the optimal game path */
 template <class Order,class Util>
-double  ExpectiMiniMax<Order,Util>::expectiminimax(coord& curpos, coord& best_move,int depth,int curr_agent){
+double  ExpectiMiniMax<Order,Util>::expectiminimax(coord& curpos, coord& best_move,int depth,int curr_agent,int& numnodes){
     //max depth hit (double the max depth here because of the chance nodes */
     if(depth==MAX_DEPTH){
         return util.get_utility(curpos);
@@ -437,41 +501,48 @@ double  ExpectiMiniMax<Order,Util>::expectiminimax(coord& curpos, coord& best_mo
     if(board->terminal_pos()){
         return util.get_utility(curpos);;
     }else if(curr_agent==board->maxagent){ 
+        numnodes++;
         coord nextpos;
-        int max_util=INT_MIN;
+        double max_util=INT_MIN;
         coord max_pos=curpos;
 
         Order iterator(board,curr_agent);
         while((nextpos=iterator.next_pos(curpos,board->minagent))!=iterator.end()){
             //change the board state(including blitzing) 
-            printf("\n%sThe board position tried for player max at depth %d is %d,%d\n",std::string(depth,'\t').c_str(),depth,nextpos.first,nextpos.second);
-            board->print_board(depth);
+            myprintf("\n%sThe board position tried for player max at depth %d is %d,%d\n",std::string(depth,'\t').c_str(),depth,nextpos.first,nextpos.second);
             int other_agent;
             coord returnpos; //duumy for the return
 
             //first evaluate all regular moves (i.e. para drop and blitz)
             std::vector<coord> modified_pos;
             other_agent = board->move_normal(nextpos,curr_agent,modified_pos);
-            if(modified_pos.size()>0) printf("\nBlitzing!");
-            double util_regular = expectiminimax(nextpos,returnpos,depth+1,board->minagent);
+            myprintf("\n%sThe board after default move:\n",std::string(depth,'\t').c_str());
+            board->print_board(depth);
+            if(modified_pos.size()>0) myprintf("\n%sBlitzing!\n",std::string(depth,'\t').c_str());
+            double util_regular = expectiminimax(nextpos,returnpos,depth+1,board->minagent,numnodes);
             board->undo_move_normal(nextpos,curr_agent,other_agent,modified_pos);
-            printf("\n%sreceived utility with default %f\n",std::string(depth,'\t').c_str(),util_regular);
+            myprintf("\n%sreceived utility with default %f\n",std::string(depth,'\t').c_str(),util_regular);
 
             //now try out the sabotage move 
             modified_pos.clear();
             other_agent = board->move_normal(nextpos,curr_agent,modified_pos,true);
-            double util_sabotage = expectiminimax(nextpos,returnpos,depth+1,board->minagent);
+            myprintf("\n%sThe board after sabotage move:\n",std::string(depth,'\t').c_str());
+            board->print_board(depth);
+            double util_sabotage = expectiminimax(nextpos,returnpos,depth+1,board->minagent,numnodes);
             board->undo_move_normal(nextpos,curr_agent,other_agent,modified_pos);
-            printf("\n%sreceived utility with sabotage %f\n",std::string(depth,'\t').c_str(),util_sabotage);
+            myprintf("\n%sreceived utility with sabotage %f\n",std::string(depth,'\t').c_str(),util_sabotage);
                     
             //cacluate total util 
             double util = (1-gamma)*util_regular+gamma*util_sabotage;
+            myprintf("\n%sTotal utility for max %f\n",std::string(depth,'\t').c_str(),util);
+            
             if (util>max_util){
                 max_util = util;
                 max_pos = nextpos;
             }
         }
         best_move = max_pos;
+        myprintf("\n%sBest move for max at depth %d: %d,%d with util %f",std::string(depth,'\t').c_str(),depth,best_move.first,best_move.second,max_util);
         return max_util;
     }else if(curr_agent==board->minagent){
 
@@ -483,38 +554,42 @@ double  ExpectiMiniMax<Order,Util>::expectiminimax(coord& curpos, coord& best_mo
         Order iterator(board,curr_agent);
         while((nextpos=iterator.next_pos(curpos,board->maxagent))!=iterator.end()){
 
-            printf("\n%sThe board position tried for player min at depth %d is %d,%d\n",std::string(depth,'\t').c_str(),depth,nextpos.first,nextpos.second);
-            board->print_board(depth);
+            myprintf("\n%sThe board position tried for player min at depth %d is %d,%d\n",std::string(depth,'\t').c_str(),depth,nextpos.first,nextpos.second);
             int other_agent;
             coord returnpos; //duumy for the return
 
             //first evaluate all regular moves (i.e. para drop and blitz)
             std::vector<coord> modified_pos;
             other_agent = board->move_normal(nextpos,curr_agent,modified_pos);
-            if(modified_pos.size()>0) printf("\nBlitzing!");
-            double util_regular = expectiminimax(nextpos,returnpos,depth+1,board->maxagent);
+            myprintf("\n%sThe board after default move:\n",std::string(depth,'\t').c_str());
+            board->print_board(depth);
+            if(modified_pos.size()>0) myprintf("\n%sBlitzing!\n",std::string(depth,'\t').c_str());
+            double util_regular = expectiminimax(nextpos,returnpos,depth+1,board->maxagent,numnodes);
             board->undo_move_normal(nextpos,curr_agent,other_agent,modified_pos);
-            printf("\n%sreceived utility with default %f\n",std::string(depth,'\t').c_str(),util_regular);
+            myprintf("\n%sreceived utility with default %f\n",std::string(depth,'\t').c_str(),util_regular);
 
             //now try out the sabotage move 
             modified_pos.clear();
             other_agent = board->move_normal(nextpos,curr_agent,modified_pos,true);
-            double util_sabotage = expectiminimax(nextpos,returnpos,depth+1,board->maxagent);
+            myprintf("\n%sThe board after sabotage move:\n",std::string(depth,'\t').c_str());
+            board->print_board(depth);
+            double util_sabotage = expectiminimax(nextpos,returnpos,depth+1,board->maxagent,numnodes);
             board->undo_move_normal(nextpos,curr_agent,other_agent,modified_pos);
-            printf("\n%sreceived utility with sabotage %d\n",std::string(depth,'\t').c_str(),util_sabotage);
+            myprintf("\n%sreceived utility with sabotage %f\n",std::string(depth,'\t').c_str(),util_sabotage);
                     
             //cacluate total util 
             double util = (1-gamma)*util_regular+gamma*util_sabotage;
+            myprintf("\n%sTotal utility for min %f\n",std::string(depth,'\t').c_str(),util);
             if (util<min_util){
                 min_util = util;
                 min_pos = nextpos;
             }
         }
         best_move = min_pos;
+        myprintf("\n%sBest move for min at depth %d: %d,%d with util %f",std::string(depth,'\t').c_str(),depth,best_move.first,best_move.second,min_util);
         return min_util;
-
     }else{
-        printf("Error state of game");
+        myprintf("Error state of game");
         exit(1);
     }
 }
@@ -530,37 +605,65 @@ void play_game(GameBoard& board){
     //curr_agent  = BLUE;
     std::vector<coord> move_arr1,move_arr2;
     /* till the game finishes*/
+    int total_1=0,total_2=0;
+    int nrounds = 0;
     while(!board.terminal_pos()){
+        nrounds++;
         coord a1_move,a2_move;
-        int util1 = a1.play(a1_move,BLUE);
-        printf("\nPlayer BLUE moved to position %d,%d with util: %d",a1_move.first,a1_move.second,util1);
+        int numnodes1,numnodes2;
+        double util1 = a1.play(a1_move,BLUE,numnodes1);
+        printf("\nPlayer BLUE moved to position %d,%d with util: %f and number of nodes expanded: %d\n",a1_move.first,a1_move.second,util1,numnodes2);
+        total_1+=numnodes1;
         board.move_normal(a1_move,BLUE,move_arr1); 
-        int util2 = a2.play(a2_move,GREEN);
-        printf("\nPlayer GREEN moved to position %d,%d with util: %d",a2_move.first,a2_move.second,util2);
+        board.print_board();
+        double util2 = a2.play(a2_move,GREEN,numnodes2);
+        printf("\nPlayer GREEN moved to position %d,%d with util: %f and number of nodes expanded :%d\n",a2_move.first,a2_move.second,util2,numnodes2);
+        total_2+=numnodes2;
         board.move_normal(a2_move,GREEN,move_arr2);
+        board.print_board();
     }
+    cout<<"\nThe final state of the board is \n";
+    board.print_board();
+    cout<<"\nThe final scores of the players are \n";
+    cout<<"\nBLUE:"<<board.total_util[BLUE]<<" "<<"GREEN:"<<board.total_util[GREEN];
+    cout<<"\nThe average number of nodes expanded per move are \n";
+    cout<<"\nBLUE:"<<total_1/nrounds<<" "<<"GREEN:"<<total_2/nrounds;
+     
 }
+typedef MiniMax<DefaultMoveOrder,DefaultUtility> minimaxagent;
+typedef ExpectiMiniMax<DefaultMoveOrder,DefaultUtility> expectiagent;
+typedef AlphaBeta<PriorityMoveOrder,DefaultUtility> abagent;
 void test_minimax(GameBoard &b){
-    MiniMax<DefaultMoveOrder,DefaultUtility> algo(&b) ;
+    minimaxagent algo(&b) ;
     std::vector<coord> move_list;
     coord startpos(0,0);
-    int root_util = algo.minimax(startpos,move_list,0,b.maxagent);
+    int numnodes;
+    int root_util = algo.minimax(startpos,move_list,0,b.maxagent,numnodes);
     cout<<"The order of moves is\n";
     for(int i=0;i<move_list.size();++i)
-        printf("{%d,%d}\n",move_list[i].first,move_list[i].second);
+        myprintf("{%d,%d}\n",move_list[i].first,move_list[i].second);
     cout<<"Total utility "<<root_util;
 }
 void test_alphabeta(GameBoard &b){
-    AlphaBeta<DefaultMoveOrder,DefaultUtility> algo(&b) ;
+    abagent algo(&b) ;
     std::vector<coord> move_list;
     coord startpos(0,0);
-    int root_util = algo.alphabeta(startpos,move_list,0,b.maxagent,INT_MIN,INT_MAX);
+    int numnodes;
+    int root_util = algo.alphabeta(startpos,move_list,0,b.maxagent,INT_MIN,INT_MAX,numnodes);
     cout<<"The order of moves is\n";
     for(int i=0;i<move_list.size();++i)
-        printf("{%d,%d}\n",move_list[i].first,move_list[i].second);
+        myprintf("{%d,%d}\n",move_list[i].first,move_list[i].second);
     cout<<"Total utility "<<root_util;
 }
-typedef MiniMax<DefaultMoveOrder,DefaultUtility> minimaxagent;
+void test_exxpectiminimax(GameBoard &b){
+    expectiagent algo(&b,0.2) ;
+    coord startpos(0,0);
+    coord best_move;
+    int numnodes;
+    int root_util = algo.expectiminimax(startpos,best_move,0,b.maxagent,numnodes);
+    cout<<"\nThe best move for max is "<<best_move.first<<","<<best_move.second;
+    cout<<"\nTotal utility "<<root_util;
+}
 int main(){
 
     //n rows , m columns
@@ -576,10 +679,12 @@ int main(){
     for (int i=0;i<n;++i)
         for (int j=0;j<m;++j)
             cin>>b.board[i*m+j][0];
-    printf("\nThe inital board is \n");
+    cout<<"\nThe inital board is \n";
     b.print_board();
-    printf("\nStarting the game\n");
-    test_alphabeta(b);
-    //play_game<minimaxagent,minimaxagent>(b);
+    cout<<"\nStarting the game\n";
+    //test_minimax(b);
+    //test_alphabeta(b);
+    //test_exxpectiminimax(b);
+    play_game<abagent,abagent>(b);
     return 0;
 }
