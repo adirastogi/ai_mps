@@ -16,8 +16,8 @@ using namespace std;
 #define EMPTY 3
 #define MAX_X 6
 #define MAX_Y 6
-#define MAX_DEPTH 3
-#define MAX_DEPTH_AB 3
+#define MAX_DEPTH 4
+#define MAX_DEPTH_AB 5
 #define MAX_DEPTH_EM 4
 
 #define DEBUG 0
@@ -736,7 +736,7 @@ timestamp_t get_timestamp ()
 }
 typedef MiniMax<DefaultMoveOrder,DefaultUtility> minimaxagent;
 typedef ExpectiMiniMax<DefaultMoveOrder,DefaultUtility> expectiagent;
-typedef AlphaBeta<DefaultMoveOrder,DefaultUtility> abagent;
+typedef AlphaBeta<PriorityMoveOrder,DefaultUtility> abagent;
 /* function to simulate gameplay , with Agent1 taking blue and going first*/
 template<class Agent1, class Agent2>
 void play_game(GameBoard& board){
@@ -787,12 +787,12 @@ void play_game(GameBoard& board){
 }
 void play_expectiminimax(GameBoard& board){
     double gamma_vals[]  = {0.2,0.4,0.6,0.8,1.0};
-    for(int i=0;i<5;++i){
+    for(int i=2;i<3;++i){
         //running average of total scores after each game        
         int total_1=0,total_2=0;
         int total_sabotage=0;
 
-        for(int j=0;j<10;++j){
+        for(int j=0;j<1;++j){
             double gamma = gamma_vals[i];
             cout<<"\n\tPlaying iteration "<<j<<"\n";
             timestamp_t time1=0, time2=0;
@@ -920,7 +920,7 @@ int main(){
     //test_minimax(b);
     //test_alphabeta(b);
     //test_exxpectiminimax(b);
-    play_game<minimaxagent,minimaxagent>(b);
-    //play_expectiminimax(b);
+    //play_game<minimaxagent,minimaxagent>(b);
+    play_expectiminimax(b);
     return 0;
 }
