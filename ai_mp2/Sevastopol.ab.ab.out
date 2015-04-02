@@ -1,0 +1,319 @@
+
+The inital board is 
+1|E 1|E 1|E 1|E 1|E 1|E 
+2|E 2|E 2|E 2|E 2|E 2|E 
+4|E 4|E 4|E 4|E 4|E 4|E 
+8|E 8|E 8|E 8|E 8|E 8|E 
+16|E 16|E 16|E 16|E 16|E 16|E 
+32|E 32|E 32|E 32|E 32|E 32|E 
+
+Starting the game
+
+Player BLUE moved to position 5,0 with util: 32.000000 and number of nodes expanded: 1154
+1|E 1|E 1|E 1|E 1|E 1|E 
+2|E 2|E 2|E 2|E 2|E 2|E 
+4|E 4|E 4|E 4|E 4|E 4|E 
+8|E 8|E 8|E 8|E 8|E 8|E 
+16|E 16|E 16|E 16|E 16|E 16|E 
+32|B 32|E 32|E 32|E 32|E 32|E 
+
+Player GREEN moved to position 5,1 with util: 0.000000 and number of nodes expanded :1112
+1|E 1|E 1|E 1|E 1|E 1|E 
+2|E 2|E 2|E 2|E 2|E 2|E 
+4|E 4|E 4|E 4|E 4|E 4|E 
+8|E 8|E 8|E 8|E 8|E 8|E 
+16|E 16|E 16|E 16|E 16|E 16|E 
+32|B 32|G 32|E 32|E 32|E 32|E 
+
+Player BLUE moved to position 5,2 with util: 32.000000 and number of nodes expanded: 1046
+1|E 1|E 1|E 1|E 1|E 1|E 
+2|E 2|E 2|E 2|E 2|E 2|E 
+4|E 4|E 4|E 4|E 4|E 4|E 
+8|E 8|E 8|E 8|E 8|E 8|E 
+16|E 16|E 16|E 16|E 16|E 16|E 
+32|B 32|G 32|B 32|E 32|E 32|E 
+
+Player GREEN moved to position 5,3 with util: 0.000000 and number of nodes expanded :1007
+1|E 1|E 1|E 1|E 1|E 1|E 
+2|E 2|E 2|E 2|E 2|E 2|E 
+4|E 4|E 4|E 4|E 4|E 4|E 
+8|E 8|E 8|E 8|E 8|E 8|E 
+16|E 16|E 16|E 16|E 16|E 16|E 
+32|B 32|G 32|B 32|G 32|E 32|E 
+
+Player BLUE moved to position 3,1 with util: 24.000000 and number of nodes expanded: 970
+1|E 1|E 1|E 1|E 1|E 1|E 
+2|E 2|E 2|E 2|E 2|E 2|E 
+4|E 4|E 4|E 4|E 4|E 4|E 
+8|E 8|B 8|E 8|E 8|E 8|E 
+16|E 16|E 16|E 16|E 16|E 16|E 
+32|B 32|G 32|B 32|G 32|E 32|E 
+
+Player GREEN moved to position 3,0 with util: -32.000000 and number of nodes expanded :715
+1|E 1|E 1|E 1|E 1|E 1|E 
+2|E 2|E 2|E 2|E 2|E 2|E 
+4|E 4|E 4|E 4|E 4|E 4|E 
+8|G 8|B 8|E 8|E 8|E 8|E 
+16|E 16|E 16|E 16|E 16|E 16|E 
+32|B 32|G 32|B 32|G 32|E 32|E 
+
+Player BLUE moved to position 5,4 with util: 64.000000 and number of nodes expanded: 740
+1|E 1|E 1|E 1|E 1|E 1|E 
+2|E 2|E 2|E 2|E 2|E 2|E 
+4|E 4|E 4|E 4|E 4|E 4|E 
+8|G 8|B 8|E 8|E 8|E 8|E 
+16|E 16|E 16|E 16|E 16|E 16|E 
+32|B 32|G 32|B 32|G 32|B 32|E 
+
+Player GREEN moved to position 5,5 with util: -32.000000 and number of nodes expanded :712
+1|E 1|E 1|E 1|E 1|E 1|E 
+2|E 2|E 2|E 2|E 2|E 2|E 
+4|E 4|E 4|E 4|E 4|E 4|E 
+8|G 8|B 8|E 8|E 8|E 8|E 
+16|E 16|E 16|E 16|E 16|E 16|E 
+32|B 32|G 32|B 32|G 32|B 32|G 
+
+Player BLUE moved to position 4,3 with util: 48.000000 and number of nodes expanded: 676
+1|E 1|E 1|E 1|E 1|E 1|E 
+2|E 2|E 2|E 2|E 2|E 2|E 
+4|E 4|E 4|E 4|E 4|E 4|E 
+8|G 8|B 8|E 8|E 8|E 8|E 
+16|E 16|E 16|E 16|B 16|E 16|E 
+32|B 32|G 32|B 32|G 32|B 32|G 
+
+Player GREEN moved to position 3,2 with util: -40.000000 and number of nodes expanded :641
+1|E 1|E 1|E 1|E 1|E 1|E 
+2|E 2|E 2|E 2|E 2|E 2|E 
+4|E 4|E 4|E 4|E 4|E 4|E 
+8|G 8|B 8|G 8|E 8|E 8|E 
+16|E 16|E 16|E 16|B 16|E 16|E 
+32|B 32|G 32|B 32|G 32|B 32|G 
+
+Player BLUE moved to position 3,3 with util: 64.000000 and number of nodes expanded: 615
+1|E 1|E 1|E 1|E 1|E 1|E 
+2|E 2|E 2|E 2|E 2|E 2|E 
+4|E 4|E 4|E 4|E 4|E 4|E 
+8|G 8|B 8|B 8|B 8|E 8|E 
+16|E 16|E 16|E 16|B 16|E 16|E 
+32|B 32|G 32|B 32|G 32|B 32|G 
+
+Player GREEN moved to position 4,4 with util: -16.000000 and number of nodes expanded :552
+1|E 1|E 1|E 1|E 1|E 1|E 
+2|E 2|E 2|E 2|E 2|E 2|E 
+4|E 4|E 4|E 4|E 4|E 4|E 
+8|G 8|B 8|B 8|B 8|E 8|E 
+16|E 16|E 16|E 16|B 16|G 16|E 
+32|B 32|G 32|B 32|G 32|B 32|G 
+
+Player BLUE moved to position 3,4 with util: 88.000000 and number of nodes expanded: 516
+1|E 1|E 1|E 1|E 1|E 1|E 
+2|E 2|E 2|E 2|E 2|E 2|E 
+4|E 4|E 4|E 4|E 4|E 4|E 
+8|G 8|B 8|B 8|B 8|B 8|E 
+16|E 16|E 16|E 16|B 16|B 16|E 
+32|B 32|G 32|B 32|G 32|B 32|G 
+
+Player GREEN moved to position 4,5 with util: -24.000000 and number of nodes expanded :527
+1|E 1|E 1|E 1|E 1|E 1|E 
+2|E 2|E 2|E 2|E 2|E 2|E 
+4|E 4|E 4|E 4|E 4|E 4|E 
+8|G 8|B 8|B 8|B 8|B 8|E 
+16|E 16|E 16|E 16|B 16|G 16|G 
+32|B 32|G 32|B 32|G 32|B 32|G 
+
+Player BLUE moved to position 3,5 with util: 80.000000 and number of nodes expanded: 451
+1|E 1|E 1|E 1|E 1|E 1|E 
+2|E 2|E 2|E 2|E 2|E 2|E 
+4|E 4|E 4|E 4|E 4|E 4|E 
+8|G 8|B 8|B 8|B 8|B 8|B 
+16|E 16|E 16|E 16|B 16|B 16|B 
+32|B 32|G 32|B 32|G 32|B 32|G 
+
+Player GREEN moved to position 2,0 with util: 44.000000 and number of nodes expanded :410
+1|E 1|E 1|E 1|E 1|E 1|E 
+2|E 2|E 2|E 2|E 2|E 2|E 
+4|G 4|E 4|E 4|E 4|E 4|E 
+8|G 8|B 8|B 8|B 8|B 8|B 
+16|E 16|E 16|E 16|B 16|G 16|B 
+32|B 32|G 32|B 32|G 32|B 32|G 
+
+Player BLUE moved to position 2,1 with util: 88.000000 and number of nodes expanded: 305
+1|E 1|E 1|E 1|E 1|E 1|E 
+2|E 2|E 2|E 2|E 2|E 2|E 
+4|B 4|B 4|E 4|E 4|E 4|E 
+8|G 8|B 8|B 8|B 8|B 8|B 
+16|E 16|E 16|E 16|B 16|B 16|B 
+32|B 32|G 32|B 32|G 32|B 32|G 
+
+Player GREEN moved to position 2,2 with util: 52.000000 and number of nodes expanded :334
+1|E 1|E 1|E 1|E 1|E 1|E 
+2|E 2|E 2|E 2|E 2|E 2|E 
+4|B 4|B 4|G 4|E 4|E 4|E 
+8|G 8|B 8|B 8|B 8|B 8|B 
+16|E 16|E 16|E 16|B 16|B 16|B 
+32|B 32|G 32|B 32|G 32|B 32|G 
+
+Player BLUE moved to position 2,3 with util: 128.000000 and number of nodes expanded: 299
+1|E 1|E 1|E 1|E 1|E 1|E 
+2|E 2|E 2|E 2|E 2|E 2|E 
+4|B 4|B 4|B 4|B 4|E 4|E 
+8|G 8|B 8|B 8|B 8|B 8|B 
+16|E 16|E 16|E 16|B 16|B 16|B 
+32|B 32|G 32|B 32|G 32|B 32|G 
+
+Player GREEN moved to position 2,4 with util: 60.000000 and number of nodes expanded :266
+1|E 1|E 1|E 1|E 1|E 1|E 
+2|E 2|E 2|E 2|E 2|E 2|E 
+4|B 4|B 4|B 4|B 4|G 4|E 
+8|G 8|B 8|B 8|B 8|B 8|B 
+16|E 16|E 16|E 16|B 16|B 16|B 
+32|B 32|G 32|B 32|G 32|B 32|G 
+
+Player BLUE moved to position 2,5 with util: 136.000000 and number of nodes expanded: 235
+1|E 1|E 1|E 1|E 1|E 1|E 
+2|E 2|E 2|E 2|E 2|E 2|E 
+4|B 4|B 4|B 4|B 4|B 4|B 
+8|G 8|B 8|B 8|B 8|B 8|B 
+16|E 16|E 16|E 16|B 16|B 16|B 
+32|B 32|G 32|B 32|G 32|B 32|G 
+
+Player GREEN moved to position 1,0 with util: 70.000000 and number of nodes expanded :204
+1|E 1|E 1|E 1|E 1|E 1|E 
+2|G 2|E 2|E 2|E 2|E 2|E 
+4|B 4|B 4|B 4|B 4|B 4|B 
+8|G 8|B 8|B 8|B 8|B 8|B 
+16|E 16|E 16|E 16|B 16|B 16|B 
+32|B 32|G 32|B 32|G 32|B 32|G 
+
+Player BLUE moved to position 1,1 with util: 140.000000 and number of nodes expanded: 177
+1|E 1|E 1|E 1|E 1|E 1|E 
+2|B 2|B 2|E 2|E 2|E 2|E 
+4|B 4|B 4|B 4|B 4|B 4|B 
+8|G 8|B 8|B 8|B 8|B 8|B 
+16|E 16|E 16|E 16|B 16|B 16|B 
+32|B 32|G 32|B 32|G 32|B 32|G 
+
+Player GREEN moved to position 1,2 with util: 74.000000 and number of nodes expanded :152
+1|E 1|E 1|E 1|E 1|E 1|E 
+2|B 2|B 2|G 2|E 2|E 2|E 
+4|B 4|B 4|B 4|B 4|B 4|B 
+8|G 8|B 8|B 8|B 8|B 8|B 
+16|E 16|E 16|E 16|B 16|B 16|B 
+32|B 32|G 32|B 32|G 32|B 32|G 
+
+Player BLUE moved to position 1,3 with util: 144.000000 and number of nodes expanded: 129
+1|E 1|E 1|E 1|E 1|E 1|E 
+2|B 2|B 2|B 2|B 2|E 2|E 
+4|B 4|B 4|B 4|B 4|B 4|B 
+8|G 8|B 8|B 8|B 8|B 8|B 
+16|E 16|E 16|E 16|B 16|B 16|B 
+32|B 32|G 32|B 32|G 32|B 32|G 
+
+Player GREEN moved to position 1,4 with util: 78.000000 and number of nodes expanded :108
+1|E 1|E 1|E 1|E 1|E 1|E 
+2|B 2|B 2|B 2|B 2|G 2|E 
+4|B 4|B 4|B 4|B 4|B 4|B 
+8|G 8|B 8|B 8|B 8|B 8|B 
+16|E 16|E 16|E 16|B 16|B 16|B 
+32|B 32|G 32|B 32|G 32|B 32|G 
+
+Player BLUE moved to position 1,5 with util: 148.000000 and number of nodes expanded: 89
+1|E 1|E 1|E 1|E 1|E 1|E 
+2|B 2|B 2|B 2|B 2|B 2|B 
+4|B 4|B 4|B 4|B 4|B 4|B 
+8|G 8|B 8|B 8|B 8|B 8|B 
+16|E 16|E 16|E 16|B 16|B 16|B 
+32|B 32|G 32|B 32|G 32|B 32|G 
+
+Player GREEN moved to position 0,0 with util: 83.000000 and number of nodes expanded :70
+1|G 1|E 1|E 1|E 1|E 1|E 
+2|B 2|B 2|B 2|B 2|B 2|B 
+4|B 4|B 4|B 4|B 4|B 4|B 
+8|G 8|B 8|B 8|B 8|B 8|B 
+16|E 16|E 16|E 16|B 16|B 16|B 
+32|B 32|G 32|B 32|G 32|B 32|G 
+
+Player BLUE moved to position 0,1 with util: 150.000000 and number of nodes expanded: 55
+1|B 1|B 1|E 1|E 1|E 1|E 
+2|B 2|B 2|B 2|B 2|B 2|B 
+4|B 4|B 4|B 4|B 4|B 4|B 
+8|G 8|B 8|B 8|B 8|B 8|B 
+16|E 16|E 16|E 16|B 16|B 16|B 
+32|B 32|G 32|B 32|G 32|B 32|G 
+
+Player GREEN moved to position 0,2 with util: 85.000000 and number of nodes expanded :42
+1|B 1|B 1|G 1|E 1|E 1|E 
+2|B 2|B 2|B 2|B 2|B 2|B 
+4|B 4|B 4|B 4|B 4|B 4|B 
+8|G 8|B 8|B 8|B 8|B 8|B 
+16|E 16|E 16|E 16|B 16|B 16|B 
+32|B 32|G 32|B 32|G 32|B 32|G 
+
+Player BLUE moved to position 0,3 with util: 152.000000 and number of nodes expanded: 31
+1|B 1|B 1|B 1|B 1|E 1|E 
+2|B 2|B 2|B 2|B 2|B 2|B 
+4|B 4|B 4|B 4|B 4|B 4|B 
+8|G 8|B 8|B 8|B 8|B 8|B 
+16|E 16|E 16|E 16|B 16|B 16|B 
+32|B 32|G 32|B 32|G 32|B 32|G 
+
+Player GREEN moved to position 0,4 with util: 87.000000 and number of nodes expanded :22
+1|B 1|B 1|B 1|B 1|G 1|E 
+2|B 2|B 2|B 2|B 2|B 2|B 
+4|B 4|B 4|B 4|B 4|B 4|B 
+8|G 8|B 8|B 8|B 8|B 8|B 
+16|E 16|E 16|E 16|B 16|B 16|B 
+32|B 32|G 32|B 32|G 32|B 32|G 
+
+Player BLUE moved to position 0,5 with util: 154.000000 and number of nodes expanded: 15
+1|B 1|B 1|B 1|B 1|B 1|B 
+2|B 2|B 2|B 2|B 2|B 2|B 
+4|B 4|B 4|B 4|B 4|B 4|B 
+8|G 8|B 8|B 8|B 8|B 8|B 
+16|E 16|E 16|E 16|B 16|B 16|B 
+32|B 32|G 32|B 32|G 32|B 32|G 
+
+Player GREEN moved to position 4,2 with util: 106.000000 and number of nodes expanded :9
+1|B 1|B 1|B 1|B 1|B 1|B 
+2|B 2|B 2|B 2|B 2|B 2|B 
+4|B 4|B 4|B 4|B 4|B 4|B 
+8|G 8|B 8|B 8|B 8|B 8|B 
+16|E 16|E 16|G 16|B 16|B 16|B 
+32|B 32|G 32|B 32|G 32|B 32|G 
+
+Player BLUE moved to position 4,1 with util: 106.000000 and number of nodes expanded: 3
+1|B 1|B 1|B 1|B 1|B 1|B 
+2|B 2|B 2|B 2|B 2|B 2|B 
+4|B 4|B 4|B 4|B 4|B 4|B 
+8|G 8|B 8|B 8|B 8|B 8|B 
+16|E 16|B 16|B 16|B 16|B 16|B 
+32|B 32|B 32|B 32|G 32|B 32|G 
+
+Player GREEN moved to position 4,0 with util: 106.000000 and number of nodes expanded :1
+1|B 1|B 1|B 1|B 1|B 1|B 
+2|B 2|B 2|B 2|B 2|B 2|B 
+4|B 4|B 4|B 4|B 4|B 4|B 
+8|G 8|B 8|B 8|B 8|B 8|B 
+16|G 16|G 16|B 16|B 16|B 16|B 
+32|G 32|B 32|B 32|G 32|B 32|G 
+
+The final state of the board is 
+1|B 1|B 1|B 1|B 1|B 1|B 
+2|B 2|B 2|B 2|B 2|B 2|B 
+4|B 4|B 4|B 4|B 4|B 4|B 
+8|G 8|B 8|B 8|B 8|B 8|B 
+16|G 16|G 16|B 16|B 16|B 16|B 
+32|G 32|B 32|B 32|G 32|B 32|G 
+
+The final scores of the players are 
+
+BLUE:242 GREEN:136
+The total number of nodes expanded per player are 
+
+BLUE:7506 GREEN:6884
+The average number of nodes expanded per move are 
+
+BLUE:417 GREEN:382
+The average time taken  in ms per move is 
+
+BLUE:4.27778 GREEN:3.88889

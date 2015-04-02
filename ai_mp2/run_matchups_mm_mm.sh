@@ -1,4 +1,4 @@
-./a.out < Keren.txt > Keren.ab.ab.out
-./a.out < Narvik.txt > Narvik.ab.ab.out
-./a.out < Sevastopol.txt > Sevastopol.ab.ab.out
-./a.out < Smolensk.txt > Smolensk.ab.ab.out 
+./matchup.o < Keren.txt > Keren.mm.mm.out
+./matchup.o < Narvik.txt > Narvik.mm.mm.out
+./matchup.o < Sevastopol.txt > Sevastopol.mm.mm.out
+./matchup.o < Smolensk.txt > Smolensk.mm.mm.out 
